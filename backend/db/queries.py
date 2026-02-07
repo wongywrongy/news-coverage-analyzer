@@ -8,12 +8,28 @@ typed arguments / return values.
 Groups: ARTICLES, STORIES, ANALYSES, VECTORS
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 
 from db.client import get_client
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_embeddings(rows: list[dict]) -> list[dict]:
+    """Convert embedding fields from JSON strings to list[float] in-place.
+
+    pgvector columns are returned as JSON-encoded strings by Supabase.
+    """
+    for row in rows:
+        emb = row.get("embedding")
+        if isinstance(emb, str):
+            try:
+                row["embedding"] = json.loads(emb)
+            except (json.JSONDecodeError, ValueError):
+                row["embedding"] = None
+    return rows
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -82,7 +98,7 @@ def get_unassigned_articles() -> list[dict]:
             .order("published_at", desc=True)
             .execute()
         )
-        return result.data or []
+        return _parse_embeddings(result.data or [])
     except Exception as exc:
         logger.error("get_unassigned_articles failed: %s", exc)
         return []
@@ -99,14 +115,14 @@ def get_articles_for_story(story_id: int) -> list[dict]:
             .order("published_at", desc=True)
             .execute()
         )
-        return result.data or []
+        return _parse_embeddings(result.data or [])
     except Exception as exc:
         logger.error("get_articles_for_story(%d) failed: %s", story_id, exc)
         return []
 
 
-def update_article_story(article_id: int, story_id: int) -> None:
-    """Assign an article to a story."""
+def update_article_story(article_id: int, story_id: int | None) -> None:
+    """Assign an article to a story, or unassign it (story_id=None)."""
     client = get_client()
     try:
         client.table("articles").update({"story_id": story_id}).eq("id", article_id).execute()
@@ -285,10 +301,21 @@ def get_analysis(story_id: int) -> dict | None:
             client.table("analyses")
             .select("*")
             .eq("story_id", story_id)
-            .maybe_single()
             .execute()
         )
-        return result.data
+        rows = result.data or []
+        if not rows:
+            return None
+        row = rows[0]
+        # contrasts/facts may come back as JSON strings if column is TEXT
+        for field in ("contrasts", "facts"):
+            val = row.get(field)
+            if isinstance(val, str):
+                try:
+                    row[field] = json.loads(val)
+                except (json.JSONDecodeError, TypeError):
+                    row[field] = []
+        return row
     except Exception as exc:
         logger.error("get_analysis(%d) failed: %s", story_id, exc)
         return None
@@ -321,7 +348,7 @@ def get_stale_analyses(threshold_hours: float) -> list[int]:
 
 
 def find_nearest_story(
-    embedding: list[float], threshold: float = 0.82
+    embedding: list[float], threshold: float = 0.72
 ) -> tuple[int, float] | None:
     """Find the active story whose centroid is closest to *embedding*.
 
@@ -361,7 +388,15 @@ def get_story_centroids() -> list[dict]:
             .not_.is_("centroid", "null")
             .execute()
         )
-        return result.data or []
+        rows = result.data or []
+        for row in rows:
+            c = row.get("centroid")
+            if isinstance(c, str):
+                try:
+                    row["centroid"] = json.loads(c)
+                except (json.JSONDecodeError, ValueError):
+                    row["centroid"] = None
+        return [r for r in rows if r.get("centroid")]
     except Exception as exc:
         logger.error("get_story_centroids failed: %s", exc)
         return []

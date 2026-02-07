@@ -63,18 +63,20 @@ CREATE TABLE IF NOT EXISTS stories (
 
 CREATE_ANALYSES = """
 CREATE TABLE IF NOT EXISTS analyses (
-    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    story_id        BIGINT NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,
-    headline        TEXT DEFAULT '',
-    dateline        TEXT DEFAULT '',
-    lede            TEXT DEFAULT '',
-    context         TEXT DEFAULT '',
-    contrasts       TEXT DEFAULT '',
-    facts           TEXT DEFAULT '',
-    bottom_line     TEXT DEFAULT '',
-    coverage_note   TEXT DEFAULT '',
-    created_at      TIMESTAMPTZ DEFAULT now(),
-    updated_at      TIMESTAMPTZ DEFAULT now()
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    story_id             BIGINT NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,
+    headline             TEXT DEFAULT '',
+    dateline             VARCHAR(128) DEFAULT '',
+    lede                 TEXT DEFAULT '',
+    context              TEXT DEFAULT '',
+    contrasts            JSONB DEFAULT '[]'::jsonb,
+    facts                JSONB DEFAULT '[]'::jsonb,
+    bottom_line          TEXT DEFAULT '',
+    coverage_note        TEXT DEFAULT '',
+    generated_at         TIMESTAMPTZ DEFAULT now(),
+    article_count_at_gen INT DEFAULT 0,
+    created_at           TIMESTAMPTZ DEFAULT now(),
+    updated_at           TIMESTAMPTZ DEFAULT now()
 );
 """
 
@@ -136,6 +138,30 @@ BEGIN
 END $$;
 """
 
+# ── Analyses table schema upgrade (idempotent) ───────────────────────────────
+
+UPGRADE_ANALYSES = """
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS article_count_at_gen INT DEFAULT 0;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS generated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'analyses' AND column_name = 'contrasts' AND data_type = 'text'
+    ) THEN
+        ALTER TABLE analyses
+            ALTER COLUMN contrasts TYPE JSONB USING COALESCE(contrasts::jsonb, '[]'::jsonb);
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'analyses' AND column_name = 'facts' AND data_type = 'text'
+    ) THEN
+        ALTER TABLE analyses
+            ALTER COLUMN facts TYPE JSONB USING COALESCE(facts::jsonb, '[]'::jsonb);
+    END IF;
+END $$;
+"""
+
 # ── Migration runner ──────────────────────────────────────────────────────────
 
 MIGRATION_STEPS: list[tuple[str, str]] = [
@@ -147,6 +173,7 @@ MIGRATION_STEPS: list[tuple[str, str]] = [
     ("Create vector similarity indexes", CREATE_VECTOR_INDEXES),
     ("Create match_story_centroid RPC", CREATE_MATCH_RPC),
     ("Add articles → stories FK",       ADD_FK_ARTICLES_STORY),
+    ("Upgrade analyses table schema",   UPGRADE_ANALYSES),
 ]
 
 

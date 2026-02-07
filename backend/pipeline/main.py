@@ -19,6 +19,7 @@ from rich.logging import RichHandler
 
 from config.settings import settings
 from pipeline.ingest import run_ingestion
+from pipeline.process import run_analysis, run_clustering, run_scoring
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -37,13 +38,15 @@ def run_once(dry_run: bool = False) -> None:
 
     result = run_ingestion(dry_run=dry_run)
 
-    # ── Future hooks ──────────────────────────────────────────────────
-    # After ingestion:
-    # from pipeline.process import run_processing
-    # run_processing()
+    # ── Clustering + Scoring ────────────────────────────────────────
+    if not dry_run and result.new_stored > 0:
+        run_clustering()
+        run_scoring()
 
-    # from pipeline.analyze import run_analysis
-    # run_analysis()
+    # ── Analysis — always check, even without new articles ────────
+    # Stories may need analysis due to staleness or first-run population
+    if not dry_run:
+        run_analysis()
 
     logger.info(
         "Cycle complete: %d fetched, %d stored, %d errors (%.1fs)",

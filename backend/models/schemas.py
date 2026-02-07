@@ -71,11 +71,20 @@ class Story(BaseModel):
     source_count: int = 0
     avg_bias_score: float = 0.0
     bias_spread: float = 0.0        # max - min bias score in cluster
-    centroid: list[float] = Field(default_factory=list)
-    active: bool = True
+    population_affected: str = ""
+    sentiment_left: float | None = None
+    sentiment_center: float | None = None
+    sentiment_right: float | None = None
     first_seen: datetime | None = None
     last_updated: datetime | None = None
+    peak_date: str | None = None
+    status: str = "developing"
+    centroid: list[float] = Field(default_factory=list)
+    trend: list[dict] = Field(default_factory=list)
+    active: bool = True
     created_at: datetime | None = None
+    impact_scored_at: datetime | None = None
+    scored_at_article_count: int = 0
 
 
 # ── AI Analysis ──────────────────────────────────────────────────────────────
@@ -90,10 +99,12 @@ class Analysis(BaseModel):
     dateline: str = ""
     lede: str = ""
     context: str = ""
-    contrasts: str = ""              # how left vs right coverage differs
-    facts: str = ""                  # key verifiable claims
+    contrasts: list[dict] = Field(default_factory=list)
+    facts: list[dict] = Field(default_factory=list)
     bottom_line: str = ""
-    coverage_note: str = ""          # meta-note on attention gaps
+    coverage_note: str = ""
+    generated_at: datetime | None = None
+    article_count_at_gen: int = 0
 
 
 # ── Ingestion Result ─────────────────────────────────────────────────────────
