@@ -122,12 +122,43 @@ def get_articles_for_story(story_id: int) -> list[dict]:
 
 
 def update_article_story(article_id: int, story_id: int | None) -> None:
-    """Assign an article to a story, or unassign it (story_id=None)."""
+    """Assign an article to a story, or unassign it (story_id=None).
+
+    Also updates story_daily_counts: decrements the old story's count
+    for the article's publish date and increments the new story's count.
+    """
     client = get_client()
     try:
+        # Fetch article's current story_id and published_at for daily-count tracking
+        art = (
+            client.table("articles")
+            .select("story_id, published_at")
+            .eq("id", article_id)
+            .execute()
+        )
+        old_story_id = None
+        pub_date = None
+        if art.data:
+            old_story_id = art.data[0].get("story_id")
+            raw_pub = art.data[0].get("published_at")
+            if raw_pub:
+                try:
+                    pub_date = datetime.fromisoformat(raw_pub).date().isoformat()
+                except (ValueError, TypeError):
+                    pub_date = None
+
+        # Update the article's story_id
         client.table("articles").update({"story_id": story_id}).eq("id", article_id).execute()
+
+        # Update daily counts if we have a publish date
+        if pub_date:
+            if old_story_id and old_story_id != story_id:
+                _adjust_daily_count(old_story_id, pub_date, -1)
+            if story_id and story_id != old_story_id:
+                _adjust_daily_count(story_id, pub_date, 1)
+
     except Exception as exc:
-        logger.error("update_article_story(%d, %d) failed: %s", article_id, story_id, exc)
+        logger.error("update_article_story(%d, %s) failed: %s", article_id, story_id, exc)
 
 
 def update_article_sentiment(article_id: int, sentiment: float) -> None:
@@ -278,6 +309,123 @@ def deactivate_story(story_id: int) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  STORY DAILY COUNTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _adjust_daily_count(story_id: int, date_str: str, delta: int) -> None:
+    """Atomically adjust the article count for a (story, date) pair.
+
+    Uses the ``upsert_daily_count`` RPC for a single atomic operation.
+    Falls back to a read-then-write if the RPC is unavailable.
+    """
+    client = get_client()
+    try:
+        client.rpc("upsert_daily_count", {
+            "p_story_id": story_id,
+            "p_date": date_str,
+            "p_delta": delta,
+        }).execute()
+    except Exception:
+        # Fallback: read-then-write (safe for single-threaded pipeline)
+        try:
+            result = (
+                client.table("story_daily_counts")
+                .select("article_count")
+                .eq("story_id", story_id)
+                .eq("date", date_str)
+                .execute()
+            )
+            if result.data:
+                new_count = max(result.data[0]["article_count"] + delta, 0)
+                (
+                    client.table("story_daily_counts")
+                    .update({"article_count": new_count})
+                    .eq("story_id", story_id)
+                    .eq("date", date_str)
+                    .execute()
+                )
+            elif delta > 0:
+                (
+                    client.table("story_daily_counts")
+                    .insert({"story_id": story_id, "date": date_str, "article_count": delta})
+                    .execute()
+                )
+        except Exception as exc:
+            logger.error("_adjust_daily_count(%d, %s, %d) failed: %s", story_id, date_str, delta, exc)
+
+
+def get_daily_counts(story_id: int) -> list[dict]:
+    """Return daily article counts for a story, sorted by date ascending.
+
+    Returns list of ``{"date": "YYYY-MM-DD", "article_count": N}``.
+    """
+    client = get_client()
+    try:
+        result = (
+            client.table("story_daily_counts")
+            .select("date, article_count")
+            .eq("story_id", story_id)
+            .order("date")
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        logger.error("get_daily_counts(%d) failed: %s", story_id, exc)
+        return []
+
+
+def recalculate_daily_counts(story_id: int) -> int:
+    """Recompute daily counts for a story from the articles table.
+
+    Deletes existing rows and re-inserts from scratch.  Used after
+    merge/split operations or as a periodic consistency check.
+
+    Returns the number of date rows written.
+    """
+    client = get_client()
+    try:
+        # Delete existing counts for this story
+        client.table("story_daily_counts").delete().eq("story_id", story_id).execute()
+
+        # Fetch all articles for this story with published_at
+        result = (
+            client.table("articles")
+            .select("published_at")
+            .eq("story_id", story_id)
+            .not_.is_("published_at", "null")
+            .execute()
+        )
+        articles = result.data or []
+        if not articles:
+            return 0
+
+        # Group by date
+        counts: dict[str, int] = {}
+        for a in articles:
+            try:
+                dt = datetime.fromisoformat(a["published_at"])
+                key = dt.date().isoformat()
+                counts[key] = counts.get(key, 0) + 1
+            except (ValueError, TypeError):
+                continue
+
+        if not counts:
+            return 0
+
+        # Bulk insert
+        rows = [
+            {"story_id": story_id, "date": date_str, "article_count": count}
+            for date_str, count in sorted(counts.items())
+        ]
+        client.table("story_daily_counts").insert(rows).execute()
+        return len(rows)
+    except Exception as exc:
+        logger.error("recalculate_daily_counts(%d) failed: %s", story_id, exc)
+        return 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  ANALYSES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -307,8 +455,8 @@ def get_analysis(story_id: int) -> dict | None:
         if not rows:
             return None
         row = rows[0]
-        # contrasts/facts may come back as JSON strings if column is TEXT
-        for field in ("contrasts", "facts"):
+        # JSON array fields may come back as strings if column is TEXT
+        for field in ("contrasts", "facts", "source_framings"):
             val = row.get(field)
             if isinstance(val, str):
                 try:
@@ -400,6 +548,50 @@ def get_story_centroids() -> list[dict]:
     except Exception as exc:
         logger.error("get_story_centroids failed: %s", exc)
         return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  INSIGHTS CACHE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def get_cached_insights() -> list[dict]:
+    """Return the cached insights array from insights_cache table."""
+    client = get_client()
+    try:
+        result = (
+            client.table("insights_cache")
+            .select("insights, computed_at")
+            .eq("id", 1)
+            .execute()
+        )
+        if result.data:
+            row = result.data[0]
+            insights = row.get("insights", [])
+            if isinstance(insights, str):
+                try:
+                    insights = json.loads(insights)
+                except (json.JSONDecodeError, ValueError):
+                    insights = []
+            return insights if isinstance(insights, list) else []
+        return []
+    except Exception as exc:
+        logger.error("get_cached_insights failed: %s", exc)
+        return []
+
+
+def set_cached_insights(insights: list[dict]) -> None:
+    """Overwrite the cached insights (singleton row id=1)."""
+    client = get_client()
+    try:
+        client.table("insights_cache").upsert({
+            "id": 1,
+            "insights": insights,
+            "computed_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+        logger.info("Cached %d insights", len(insights))
+    except Exception as exc:
+        logger.error("set_cached_insights failed: %s", exc)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

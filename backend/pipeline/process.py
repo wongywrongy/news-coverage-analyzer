@@ -28,8 +28,11 @@ from clustering.merge import merge_similar_stories
 from clustering.split import split_oversized_stories
 from db import queries as db
 from scoring.attention import score_attention
+from scoring.coverage import score_coverage
 from scoring.gaps import detect_gaps
 from scoring.impact import score_impacts
+from scoring.insights import generate_insights
+from scoring.ranking import score_rankings
 from scoring.sentiment import analyze_sentiment
 from scoring.timeline import update_timelines
 
@@ -63,6 +66,10 @@ def run_clustering() -> dict:
     # 4. Label ALL stories that need it (not just new ones)
     label_result = label_stories()
 
+    # 4.5 Rename vague headlines into specific, neutral ones
+    from analysis.headlines import rename_vague_headlines
+    rename_result = rename_vague_headlines()
+
     # 5. Merge converged stories
     merge_result = merge_similar_stories()
 
@@ -75,16 +82,18 @@ def run_clustering() -> dict:
         "discover": discover_result,
         "split": split_result,
         "label": label_result,
+        "rename": rename_result,
         "merge": merge_result,
         "active_stories": len(active_stories),
     }
 
     logger.info(
-        "Clustering complete: %d assigned, %d new clusters, %d split, %d labeled, %d merged, %d active.",
+        "Clustering complete: %d assigned, %d new clusters, %d split, %d labeled, %d renamed, %d merged, %d active.",
         assign_result["assigned"],
         discover_result["clusters_found"],
         split_result["stories_split"],
         label_result["labeled"],
+        rename_result["renamed"],
         merge_result["merges_performed"],
         len(active_stories),
     )
@@ -162,6 +171,9 @@ def run_scoring() -> dict:
     # 3. Attention scoring
     attention_result = score_attention(story_articles=story_articles)
 
+    # 3b. Coverage scoring (formalized 4-factor score)
+    coverage_result = score_coverage(story_articles=story_articles)
+
     # 4. Sentiment analysis
     sentiment_result = analyze_sentiment(story_articles=story_articles)
 
@@ -171,7 +183,13 @@ def run_scoring() -> dict:
     # 6. Gap detection (requires impact + attention, not articles)
     gap_result = detect_gaps()
 
-    # 7. Deactivate stale low-impact stories (>72h old, score <20)
+    # 7. Ranking (depends on impact, coverage, trend, framings)
+    ranking_result = score_rankings()
+
+    # 8. Global insights (cached for frontend insights bar)
+    insights_result = generate_insights()
+
+    # 9. Deactivate stale low-impact stories (>72h old, score <20)
     deactivated = 0
     now = datetime.now(timezone.utc)
     for story in all_stories:
@@ -196,33 +214,38 @@ def run_scoring() -> dict:
                 story["id"], story.get("topic"),
             )
 
-    # 8. Summary
+    # 10. Summary
     _print_scoring_summary(
-        impact_result, outliers, attention_result,
-        sentiment_result, timeline_result, gap_result,
+        impact_result, outliers, attention_result, coverage_result,
+        sentiment_result, timeline_result, gap_result, ranking_result,
     )
 
     combined = {
         "impact": impact_result,
         "outliers_handled": len(outliers),
         "attention": attention_result,
+        "coverage": coverage_result,
         "sentiment": sentiment_result,
         "timeline": timeline_result,
         "gaps": gap_result,
+        "ranking": ranking_result,
+        "insights": insights_result,
         "deactivated": deactivated,
     }
 
     logger.info(
-        "Scoring complete: %d impact, %d outliers, %d attention, "
-        "%d sentiment, %d timelines, %d/%d/%d buried/over/balanced.",
+        "Scoring complete: %d impact, %d outliers, %d attention, %d coverage, "
+        "%d sentiment, %d timelines, %d/%d/%d sig>cov/cov>sig/proportional, %d ranked.",
         impact_result["scored"],
         len(outliers),
         attention_result["scored"],
+        coverage_result["scored"],
         sentiment_result["analyzed"],
         timeline_result["updated"],
-        len(gap_result["buried"]),
-        len(gap_result["overcovered"]),
-        len(gap_result["balanced"]),
+        len(gap_result["significance_exceeds_coverage"]),
+        len(gap_result["coverage_exceeds_significance"]),
+        len(gap_result["roughly_proportional"]),
+        ranking_result["scored"],
     )
 
     return combined
@@ -232,9 +255,11 @@ def _print_scoring_summary(
     impact: dict,
     outliers: list[dict],
     attention: dict,
+    coverage: dict,
     sentiment: dict,
     timeline: dict,
     gaps: dict,
+    ranking: dict,
 ) -> None:
     """Print a rich scoring summary panel + top buried/overcovered stories."""
     lines = Text()
@@ -244,39 +269,68 @@ def _print_scoring_summary(
     lines.append(f"{len(outliers)}\n", style="bold")
     lines.append("Attention scores computed:  ", style="dim")
     lines.append(f"{attention['scored']}\n", style="bold")
+    lines.append("Coverage scores computed:   ", style="dim")
+    lines.append(f"{coverage['scored']}\n", style="bold")
     lines.append("Sentiment analyzed:         ", style="dim")
     lines.append(f"{sentiment['analyzed']}\n", style="bold")
     lines.append("Timelines updated:          ", style="dim")
     lines.append(f"{timeline['updated']}\n", style="bold")
+    lines.append("Rankings computed:          ", style="dim")
+    lines.append(f"{ranking['scored']}\n", style="bold")
     lines.append("\n", style="dim")
-    lines.append("Buried stories:             ", style="dim")
-    lines.append(f"{len(gaps['buried'])}\n", style="bold red")
-    lines.append("Overcovered stories:        ", style="dim")
-    lines.append(f"{len(gaps['overcovered'])}\n", style="bold yellow")
-    lines.append("Balanced stories:           ", style="dim")
-    lines.append(f"{len(gaps['balanced'])}", style="bold green")
+    lines.append("Significance > coverage:    ", style="dim")
+    lines.append(f"{len(gaps['significance_exceeds_coverage'])}\n", style="bold red")
+    lines.append("Coverage > significance:    ", style="dim")
+    lines.append(f"{len(gaps['coverage_exceeds_significance'])}\n", style="bold yellow")
+    lines.append("Roughly proportional:       ", style="dim")
+    lines.append(f"{len(gaps['roughly_proportional'])}", style="bold green")
 
     console.print(Panel(lines, title="Scoring Summary", border_style="magenta"))
 
-    # Top 3 buried
-    if gaps["buried"]:
-        console.print("\n[bold red]BURIED (underreported):[/bold red]")
-        for s in gaps["buried"][:3]:
+    # Top 3 significance > coverage
+    sig_ex = gaps["significance_exceeds_coverage"]
+    if sig_ex:
+        console.print("\n[bold red]SIGNIFICANCE > COVERAGE:[/bold red]")
+        for s in sig_ex[:3]:
             console.print(
-                f"  [dim]\"{s['topic']}\"[/dim] — impact: {s['impact_score']}, "
-                f"attention: {s['attention_score']}, gap: +{s['gap']}"
+                f"  [dim]\"{s['topic']}\"[/dim] — significance: {s['significance_score']}, "
+                f"coverage: {s['coverage_score']}, gap: +{s['gap']:.0f}"
             )
 
-    # Top 3 overcovered
-    if gaps["overcovered"]:
-        console.print("\n[bold yellow]OVERCOVERED (overreported):[/bold yellow]")
-        for s in gaps["overcovered"][:3]:
+    # Top 3 coverage > significance
+    cov_ex = gaps["coverage_exceeds_significance"]
+    if cov_ex:
+        console.print("\n[bold yellow]COVERAGE > SIGNIFICANCE:[/bold yellow]")
+        for s in cov_ex[:3]:
             console.print(
-                f"  [dim]\"{s['topic']}\"[/dim] — impact: {s['impact_score']}, "
-                f"attention: {s['attention_score']}, gap: {s['gap']}"
+                f"  [dim]\"{s['topic']}\"[/dim] — significance: {s['significance_score']}, "
+                f"coverage: {s['coverage_score']}, gap: {s['gap']:.0f}"
             )
 
     console.print()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SCRAPING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def run_scraping(limit: int = 50) -> dict:
+    """Scrape missing article bodies via trafilatura.
+
+    Runs after ingestion/clustering/scoring, before analysis.
+    """
+    console.rule("[bold blue]Article Body Scraping[/bold blue]")
+
+    from ingestion.scraper import scrape_missing_bodies
+
+    result = scrape_missing_bodies(limit=limit)
+    console.print(
+        f"  Scraped: {result['scraped']}, "
+        f"Failed: {result['failed']}, "
+        f"Skipped: {result['skipped']}"
+    )
+    return result
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -298,8 +352,12 @@ def run_analysis() -> dict:
     from analysis.staleness import get_stories_needing_analysis
     from analysis.generator import generate_analyses
 
-    # Get priority list
-    story_ids = get_stories_needing_analysis(max_results=5)
+    from config.settings import settings as cfg
+    batch_size = cfg.analysis_batch_size
+    if batch_size <= 0:
+        console.print("  ANALYSIS_BATCH_SIZE=0, skipping analysis.")
+        return {"generated": 0, "skipped": 0, "errors": 0}
+    story_ids = get_stories_needing_analysis(max_results=batch_size)
 
     if not story_ids:
         console.print("  No stories need analysis this cycle.")
@@ -348,7 +406,9 @@ if __name__ == "__main__":
     print(f"\nImpact scored:   {scoring_result['impact']['scored']}")
     print(f"Outliers:        {scoring_result['outliers_handled']}")
     print(f"Attention:       {scoring_result['attention']['scored']}")
+    print(f"Coverage:        {scoring_result['coverage']['scored']}")
     print(f"Sentiment:       {scoring_result['sentiment']['analyzed']}")
     print(f"Timelines:       {scoring_result['timeline']['updated']}")
-    print(f"Buried:          {len(scoring_result['gaps']['buried'])}")
-    print(f"Overcovered:     {len(scoring_result['gaps']['overcovered'])}")
+    print(f"Sig > coverage:  {len(scoring_result['gaps']['significance_exceeds_coverage'])}")
+    print(f"Cov > sig:       {len(scoring_result['gaps']['coverage_exceeds_significance'])}")
+    print(f"Ranked:          {scoring_result['ranking']['scored']}")

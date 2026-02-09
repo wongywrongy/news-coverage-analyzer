@@ -1,12 +1,16 @@
-"""Score real-world impact of news stories using Claude Haiku.
+"""Score real-world significance of news stories using Claude Haiku.
 
-Each story gets a 0-100 impact score based on population affected,
-policy significance, lasting consequences, geographic scope, and urgency.
-As a free piggyback, cluster coherence is validated in the same API call —
-headlines that don't belong are flagged as outliers for the orchestrator
-to handle.
+Each story gets a 0-100 significance score based on five weighted factors:
+  - Population directly affected (0-30)
+  - Economic magnitude (0-25)
+  - Policy/regulatory change (0-20)
+  - Duration of effect (0-15)
+  - Irreversibility (0-10)
 
-Cost: ~$0.002 per story (Haiku input + 300 output tokens).
+Returns a full factor breakdown with per-factor rationale, confidence
+level, and insufficient-data flags.
+
+Cost: ~$0.002 per story (Haiku input + output tokens).
 """
 
 import json
@@ -18,7 +22,6 @@ from datetime import datetime, timezone
 from anthropic import Anthropic
 
 from config.settings import settings
-from config.sources import SOURCE_BIAS
 from db import queries as db
 
 logger = logging.getLogger(__name__)
@@ -30,42 +33,13 @@ _RESCORE_HOURS = 6.0
 _GROWTH_THRESHOLD = 0.20  # 20% article count growth triggers rescore
 
 _SYSTEM_PROMPT = (
-    "You are a news analyst for ClearSignal. You have two jobs:\n"
-    "1. Rate the real-world IMPACT of a news story\n"
-    "2. Check if all headlines actually belong to the same story\n\n"
-    "Be objective. Impact means lasting consequences for real people, "
-    "NOT how much media coverage it gets.\n\n"
-    "For cluster validation, be VERY conservative. Only flag articles "
-    "that are clearly about a completely different event. Different angles "
-    "on the same story are NOT outliers."
+    "You are a news significance scorer. You evaluate the real-world impact "
+    "of a news story using 5 measurable factors. You are descriptive, not "
+    "prescriptive. You do not judge whether a story 'deserves' coverage — "
+    "you estimate its tangible impact on people and systems."
 )
 
-_BIAS_BUCKETS: dict[str, list[str]] = {
-    "LEFT / FAR-LEFT": ["far-left", "left"],
-    "LEFT-CENTER": ["left-center"],
-    "CENTER": ["center"],
-    "RIGHT-CENTER": ["right-center"],
-    "RIGHT / FAR-RIGHT": ["right", "far-right"],
-}
-
-
 # ─── helpers ────────────────────────────────────────────────────────────────────
-
-
-def _get_bias_label(source_domain: str) -> str:
-    """Look up the bias label for a source domain (e.g. 'cnn.com')."""
-    meta = SOURCE_BIAS.get(source_domain)
-    if meta:
-        return meta["label"]
-    return "center"
-
-
-def _bucket_for_label(label: str) -> str:
-    """Map a bias label to a display bucket name."""
-    for bucket, labels in _BIAS_BUCKETS.items():
-        if label in labels:
-            return bucket
-    return "CENTER"
 
 
 def _needs_scoring(story: dict) -> bool:
@@ -124,89 +98,78 @@ def _is_stale_story(story: dict) -> bool:
 
 
 def _build_prompt(story: dict, articles: list[dict]) -> str:
-    """Build the Claude Haiku prompt for impact scoring + validation.
+    """Build the Claude Haiku user prompt for 5-factor significance scoring.
 
-    Groups article headlines by source bias bucket. If >50 articles,
-    sends only the 50 most recent (newest are most likely misassigned).
+    Sends article headlines and excerpts (first 150 words) without any
+    bias labels or political grouping.
     """
     topic = story.get("topic") or "(unknown topic)"
-    article_count = story.get("article_count") or len(articles)
-    source_count = story.get("source_count") or 0
 
-    # Cap at 50 most recent headlines (already sorted newest-first from DB)
+    # Cap at 50 most recent articles (already sorted newest-first from DB)
     display_articles = articles[:_MAX_HEADLINES]
 
-    # Group by bias bucket
-    buckets: dict[str, list[str]] = {b: [] for b in _BIAS_BUCKETS}
+    # Format each article: "- {headline} ({source_name}): \"{first_150_words}\""
+    lines: list[str] = []
     for a in display_articles:
         source = a.get("source_name") or "unknown"
         title = a.get("title") or "(no title)"
-        article_id = a.get("id", "?")
-        label = _get_bias_label(a.get("source_domain", ""))
-        bucket = _bucket_for_label(label)
-        buckets[bucket].append(f"- [{source}] {title}  (id:{article_id})")
+        # Build excerpt from body or description
+        body = (a.get("body") or a.get("description") or "").strip()
+        words = body.split()
+        excerpt = " ".join(words[:150]) if words else ""
+        if excerpt:
+            lines.append(f'- {title} ({source}): "{excerpt}"')
+        else:
+            lines.append(f"- {title} ({source})")
 
-    # Format grouped headlines
-    sections: list[str] = []
-    for bucket_name, lines in buckets.items():
-        if lines:
-            sections.append(f"{bucket_name}:\n" + "\n".join(lines))
-
-    headlines_block = "\n\n".join(sections) if sections else "(no headlines)"
-
-    truncation_note = ""
-    if len(articles) > _MAX_HEADLINES:
-        truncation_note = (
-            f"\n(Showing {_MAX_HEADLINES} of {len(articles)} headlines — "
-            "most recent shown)\n"
-        )
+    articles_block = "\n".join(lines) if lines else "(no articles)"
 
     return (
-        f"STORY: {topic}\n"
-        f"ARTICLES ({article_count} from {source_count} sources):\n"
-        f"{truncation_note}\n"
-        f"{headlines_block}\n\n"
-        "TASK 1 - IMPACT SCORE:\n"
-        "Rate 0-100 using this rubric:\n"
-        "- Population affected (0-25): How many people are directly impacted?\n"
-        "  1-5: niche/local, 6-15: one state/industry, 16-25: national/global\n"
-        "- Policy significance (0-25): Does this change laws, regulations, precedent?\n"
-        "  1-5: no policy angle, 6-15: policy debate, 16-25: enacted/blocked policy\n"
-        "- Lasting consequences (0-25): Will this matter in 6 months?\n"
-        "  1-5: forgotten in days, 6-15: weeks-long relevance, 16-25: lasting change\n"
-        "- Geographic scope (0-15): Local, state, national, or international?\n"
-        "  1-5: local, 6-10: state/regional, 11-15: national/international\n"
-        "- Urgency (0-10): Is this time-sensitive? Active crisis?\n"
-        "  1-3: background story, 4-7: developing, 8-10: active crisis\n\n"
-        "TASK 2 - CLUSTER VALIDATION:\n"
-        "Review the headlines. Flag ONLY articles that are about a COMPLETELY\n"
-        "DIFFERENT news event or topic. Do NOT flag articles that cover\n"
-        "different angles, reactions, opinions, or consequences of the same\n"
-        "underlying story — those BELONG together.\n\n"
-        "Example of what to flag:\n"
-        "- Story about Senate immigration bill, but one headline is about\n"
-        "  a NBA basketball game → flag it\n"
-        "- Story about a wildfire, but one headline is about cryptocurrency → flag it\n\n"
-        "Example of what NOT to flag:\n"
-        "- Story about deportation policy: headline about court blocking deportation,\n"
-        "  headline about protests against deportation, headline about deportation\n"
-        "  flights to Colombia — these are ALL the same story, do NOT flag\n"
-        "- Different sources framing the same event differently → do NOT flag\n\n"
-        "If in doubt, do NOT flag. We prefer keeping a borderline article over\n"
-        "incorrectly removing it. Most stories should have 0 outliers.\n"
-        "Only flag when it's obviously a completely unrelated topic.\n"
-        "Return an empty outliers array if everything looks correct.\n\n"
-        "Respond in JSON only, no other text.\n"
-        "Keep reasoning to 1-2 SHORT sentences. Keep outlier reasons under 10 words.\n\n"
+        f"Evaluate the significance of this news story.\n\n"
+        f"Story title: {topic}\n"
+        f"Article headlines and excerpts:\n"
+        f"{articles_block}\n\n"
+        "Score each factor from 0 to its maximum. Base scores ONLY on facts "
+        "stated or directly implied in the articles. If a factor cannot be "
+        "scored from available information, score it 0 and list it in "
+        "insufficient_data.\n\n"
+        "Factors:\n"
+        "1. population_affected (0-30): Number of people who experience "
+        "direct, tangible consequences. Score 5 for < 1,000; 10 for "
+        "1,000-100,000; 15 for 100K-1M; 20 for 1M-50M; 25 for 50M-500M; "
+        "30 for > 500M.\n"
+        "2. economic_magnitude (0-25): Verified or reasonably estimated "
+        "financial impact. Score 5 for < $10M; 10 for $10M-$1B; 15 for "
+        "$1B-$50B; 20 for $50B-$500B; 25 for > $500B.\n"
+        "3. policy_change (0-20): Does this create, alter, or remove laws, "
+        "regulations, treaties, or institutional rules? Score 0 for no "
+        "policy dimension; 10 for proposed/pending change; 15 for enacted "
+        "change affecting one jurisdiction; 20 for enacted change affecting "
+        "multiple jurisdictions or international scope.\n"
+        "4. duration (0-15): How long will the effects persist? Score 3 "
+        "for < 1 week; 6 for 1 week-1 month; 9 for 1-12 months; 12 for "
+        "1-10 years; 15 for > 10 years or permanent.\n"
+        "5. irreversibility (0-10): Can the effects be undone? Score 0 for "
+        "fully reversible; 5 for partially reversible with significant "
+        "effort; 10 for irreversible (e.g., deaths, environmental "
+        "destruction, demolished infrastructure).\n\n"
+        "Rules:\n"
+        "- Do not inflate scores based on emotional language in articles.\n"
+        "- Do not score based on how 'interesting' or 'clickable' the "
+        "story is.\n"
+        "- When in doubt, score lower and flag insufficient data.\n\n"
+        "Respond ONLY with valid JSON, no markdown, no preamble:\n"
         "{\n"
-        '  "impact_score": 82,\n'
-        '  "population": "All US immigrants with pending cases (~11M)",\n'
-        '  "reasoning": "Federal court order directly affects...",\n'
-        '  "category": "politics",\n'
-        '  "outliers": [\n'
-        '    {"article_id": 4521, "reason": "About Nintendo Switch"},\n'
-        '    {"article_id": 4587, "reason": "Unrelated trade policy"}\n'
-        "  ]\n"
+        '  "significance_score": <sum of 5 factors, 0-100>,\n'
+        '  "factors": {\n'
+        '    "population_affected": {"score": <int>, "rationale": "<one sentence>"},\n'
+        '    "economic_magnitude": {"score": <int>, "rationale": "<one sentence>"},\n'
+        '    "policy_change": {"score": <int>, "rationale": "<one sentence>"},\n'
+        '    "duration": {"score": <int>, "rationale": "<one sentence>"},\n'
+        '    "irreversibility": {"score": <int>, "rationale": "<one sentence>"}\n'
+        "  },\n"
+        '  "insufficient_data": ["<factor names where score is 0 due to missing info>"],\n'
+        '  "confidence": "low" | "medium" | "high"\n'
         "}"
     )
 
@@ -221,11 +184,12 @@ def _call_haiku(prompt: str) -> dict | None:
     last_error: Exception | None = None
     for attempt in range(2):
         try:
+            msg = prompt if attempt == 0 else prompt + "\n\nReturn valid JSON only, no other text."
             response = client.messages.create(
                 model=_HAIKU_MODEL,
                 max_tokens=_MAX_TOKENS,
                 system=_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": msg}],
             )
 
             # If output was truncated, the JSON is incomplete — skip retry
@@ -246,15 +210,41 @@ def _call_haiku(prompt: str) -> dict | None:
             decoder = json.JSONDecoder()
             parsed, _ = decoder.raw_decode(raw)
 
-            # Validate and clamp impact_score
-            score = parsed.get("impact_score", 0)
+            # Validate and clamp significance_score
+            score = parsed.get("significance_score", 0)
             if not isinstance(score, (int, float)):
                 score = 0
-            parsed["impact_score"] = max(0, min(100, int(score)))
+            parsed["significance_score"] = max(0, min(100, int(score)))
 
-            # Ensure outliers is a list
-            if not isinstance(parsed.get("outliers"), list):
-                parsed["outliers"] = []
+            # Backward compat alias
+            parsed["impact_score"] = parsed["significance_score"]
+
+            # Validate factor sub-scores and clamp to their max ranges
+            factor_maxes = {
+                "population_affected": 30,
+                "economic_magnitude": 25,
+                "policy_change": 20,
+                "duration": 15,
+                "irreversibility": 10,
+            }
+            factors = parsed.get("factors", {})
+            if isinstance(factors, dict):
+                for key, max_val in factor_maxes.items():
+                    factor = factors.get(key, {})
+                    if isinstance(factor, dict):
+                        raw = factor.get("score", 0)
+                        if not isinstance(raw, (int, float)):
+                            raw = 0
+                        factor["score"] = max(0, min(max_val, int(raw)))
+                parsed["factors"] = factors
+
+            # Normalize confidence
+            if parsed.get("confidence") not in ("low", "medium", "high"):
+                parsed["confidence"] = "low"
+
+            # Ensure insufficient_data is a list
+            if not isinstance(parsed.get("insufficient_data"), list):
+                parsed["insufficient_data"] = []
 
             return parsed
 
@@ -297,18 +287,16 @@ def score_impacts(
         "scored": int,
         "skipped": int,
         "errors": int,
-        "outliers_flagged": int,
-        "scores": list[dict]  # [{story_id, score, population, reasoning}]
-        "outlier_articles": list[dict]  # [{article_id, story_id, reason}]
+        "scores": list[dict]  # [{story_id, score, factors, confidence, insufficient_data}]
+        "outlier_articles": list[dict]  # always empty (kept for pipeline compat)
     }
     """
     result: dict = {
         "scored": 0,
         "skipped": 0,
         "errors": 0,
-        "outliers_flagged": 0,
         "scores": [],
-        "outlier_articles": [],
+        "outlier_articles": [],  # kept for pipeline compat (always empty now)
     }
 
     # ── 1. Resolve which stories to process ──────────────────────────────
@@ -358,20 +346,30 @@ def score_impacts(
                 result["errors"] += 1
                 continue
 
-            score = parsed["impact_score"]
-            population = parsed.get("population", "")
-            reasoning = parsed.get("reasoning", "")
+            score = parsed["significance_score"]
+            factors = parsed.get("factors", {})
+            confidence = parsed.get("confidence", "low")
+            insufficient = parsed.get("insufficient_data", [])
             category = parsed.get("category", "")
-            outliers = parsed.get("outliers", [])
 
-            # Persist score to DB
+            # Extract population rationale from factors for backward compat
+            pop_rationale = ""
+            pop_factor = factors.get("population_affected", {})
+            if isinstance(pop_factor, dict):
+                pop_rationale = pop_factor.get("rationale", "")
+
+            # Persist score to DB (impact_score = significance_score for compat)
             db.update_story_scores(story_id, impact=float(score), attention=story.get("attention_score") or 0.0)
 
-            # Persist metadata (category, population, scoring timestamp)
+            # Persist significance breakdown + metadata
             meta_update: dict = {
+                "significance_score": score,
+                "significance_factors": json.dumps(factors),
+                "confidence": confidence,
+                "caveats": insufficient,
                 "impact_scored_at": datetime.now(timezone.utc).isoformat(),
                 "scored_at_article_count": story.get("article_count") or len(articles),
-                "population_affected": population,
+                "population_affected": pop_rationale,
             }
             if category:
                 meta_update["category"] = category
@@ -381,33 +379,14 @@ def score_impacts(
             result["scores"].append({
                 "story_id": story_id,
                 "score": score,
-                "population": population,
-                "reasoning": reasoning,
+                "factors": factors,
+                "confidence": confidence,
+                "insufficient_data": insufficient,
             })
 
-            # Collect outlier articles
-            article_ids_in_story = {a["id"] for a in articles}
-            for outlier in outliers:
-                aid = outlier.get("article_id")
-                reason = outlier.get("reason", "")
-                if aid is None:
-                    continue
-                if aid not in article_ids_in_story:
-                    logger.warning(
-                        "Story %d: outlier article_id %s not in story, ignoring.",
-                        story_id, aid,
-                    )
-                    continue
-                result["outlier_articles"].append({
-                    "article_id": aid,
-                    "story_id": story_id,
-                    "reason": reason,
-                })
-                result["outliers_flagged"] += 1
-
             logger.debug(
-                "Story %d: score=%d, population='%s', outliers=%d",
-                story_id, score, population, len(outliers),
+                "Story %d: significance=%d, confidence=%s",
+                story_id, score, confidence,
             )
 
         except Exception as exc:
@@ -415,11 +394,10 @@ def score_impacts(
             result["errors"] += 1
 
     logger.info(
-        "Impact scoring complete. Scored %d, skipped %d, errors %d, outliers %d.",
+        "Impact scoring complete. Scored %d, skipped %d, errors %d.",
         result["scored"],
         result["skipped"],
         result["errors"],
-        result["outliers_flagged"],
     )
     return result
 
@@ -433,10 +411,14 @@ if __name__ == "__main__":
     print(f"\nScored: {result['scored']}")
     print(f"Skipped: {result['skipped']}")
     print(f"Errors: {result['errors']}")
-    print(f"Outliers flagged: {result['outliers_flagged']}")
 
     for s in result["scores"][:5]:
-        print(f"  Story #{s['story_id']}: {s['score']}/100 — {s['population']}")
-
-    for o in result["outlier_articles"]:
-        print(f"  Outlier article #{o['article_id']} in story #{o['story_id']}: {o['reason']}")
+        factors = s.get("factors", {})
+        pop = factors.get("population_affected", {}).get("score", "?")
+        econ = factors.get("economic_magnitude", {}).get("score", "?")
+        pol = factors.get("policy_change", {}).get("score", "?")
+        print(
+            f"  Story #{s['story_id']}: {s['score']}/100 "
+            f"(pop={pop} econ={econ} pol={pol}) "
+            f"confidence={s.get('confidence', '?')}"
+        )

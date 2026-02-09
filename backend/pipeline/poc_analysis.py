@@ -1,6 +1,6 @@
 """Proof-of-concept analysis generation — 10 hand-picked stories.
 
-Selects 10 stories across different test scenarios (buried, overcovered,
+Selects 10 stories across different test scenarios (high-gap, low-gap,
 partisan, high-impact, medium) and generates analyses for human review.
 
 NOT part of the regular pipeline. One-time test to evaluate quality
@@ -86,23 +86,23 @@ def select_stories(
             if len([x for x in selected if x[1] == category]) >= n:
                 break
 
-    # a) 2 BURIED — highest positive gap
-    buried = sorted(eligible, key=_gap, reverse=True)
+    # a) 2 HIGH-GAP — highest positive gap (impact > attention)
+    high_gap = sorted(eligible, key=_gap, reverse=True)
     _pick(
-        buried, 2, "BURIED",
+        high_gap, 2, "HIGH-GAP",
         lambda s: (
-            f"High impact ({s.get('impact_score'):.0f}), low coverage "
+            f"Impact ({s.get('impact_score'):.0f}) > attention "
             f"({s.get('attention_score'):.0f}) — gap +{_gap(s):.0f}"
         ),
     )
 
-    # b) 2 OVERCOVERED — highest negative gap
-    overcovered = sorted(eligible, key=_gap)
+    # b) 2 LOW-GAP — highest negative gap (attention > impact)
+    low_gap = sorted(eligible, key=_gap)
     _pick(
-        overcovered, 2, "OVERCOVERED",
+        low_gap, 2, "LOW-GAP",
         lambda s: (
-            f"Low impact ({s.get('impact_score'):.0f}), high coverage "
-            f"({s.get('attention_score'):.0f}) — gap {_gap(s):.0f}"
+            f"Attention ({s.get('attention_score'):.0f}) > impact "
+            f"({s.get('impact_score'):.0f}) — gap {_gap(s):.0f}"
         ),
     )
 
@@ -172,8 +172,8 @@ def print_selection(selected: list[tuple[dict, str, str]], actual_counts: dict[i
         if category != current_cat:
             current_cat = category
             style = {
-                "BURIED": "red",
-                "OVERCOVERED": "yellow",
+                "HIGH-GAP": "red",
+                "LOW-GAP": "yellow",
                 "HIGH-IMPACT": "green",
                 "PARTISAN": "magenta",
                 "MEDIUM": "cyan",
@@ -224,18 +224,36 @@ def print_analysis(story: dict, category: str, analysis: dict) -> None:
     console.print(f"\n[bold]CONTEXT:[/bold]")
     console.print(f"  {analysis.get('context', '(none)')}")
 
+    framings = analysis.get("source_framings") or []
+    if framings:
+        console.print(f"\n[bold]SOURCE FRAMINGS:[/bold]")
+        for sf in framings:
+            source = sf.get("source", "?")
+            primary = sf.get("primary_framing", "?")
+            all_framings = ", ".join(sf.get("framings", [primary]))
+            console.print(f"  [bold]{source}:[/bold] {all_framings}")
+            inclusions = sf.get("notable_inclusions", "")
+            omissions = sf.get("notable_omissions", "")
+            if inclusions:
+                console.print(f"    [dim]Includes: {inclusions}[/dim]")
+            if omissions:
+                console.print(f"    [dim]Omits: {omissions}[/dim]")
+        console.print()
+
     contrasts = analysis.get("contrasts") or []
     if contrasts:
-        console.print(f"\n[bold]CONTRASTS:[/bold]")
+        console.print(f"[bold]CONTRASTS:[/bold]")
         for c in contrasts:
             console.print(f"  [bold]THEME:[/bold] {c.get('theme', '?')}")
+            framing_a = c.get("framingA") or c.get("biasA", "?")
+            framing_b = c.get("framingB") or c.get("biasB", "?")
             console.print(
-                f"  {c.get('sourceA', '?')} ({c.get('biasA', '?')}): "
+                f"  {c.get('sourceA', '?')} ({framing_a}): "
                 f"{c.get('claimA', '?')}"
             )
             console.print("  vs.")
             console.print(
-                f"  {c.get('sourceB', '?')} ({c.get('biasB', '?')}): "
+                f"  {c.get('sourceB', '?')} ({framing_b}): "
                 f"{c.get('claimB', '?')}"
             )
             console.print()
@@ -268,15 +286,15 @@ def print_checklist() -> None:
     console.print()
     console.rule("[bold]QUALITY REVIEW CHECKLIST[/bold]")
     items = [
-        "Headline is neutral (no opinion words)",
-        "Lede answers who/what/when/where",
-        "Contrasts pair real outlets from different political leans",
+        "Headline is neutral (no evaluative adjectives)",
+        "Lede answers who/what/when/where (max 60 words)",
+        "Source framings classify article perspective, not outlet reputation",
+        "Contrasts pair real outlets with different editorial framings",
+        "No left/right political labels unless article self-identifies",
         "Fact verdicts are defensible",
-        "Bottom line describes concrete impact on people",
+        "Bottom line describes measurable consequences for people",
         "Coverage note references actual numbers",
-        "Buried stories note the under-coverage",
-        "Overcovered stories note the disproportionate coverage",
-        "Partisan stories present both sides without taking one",
+        "Framing check identifies what loaded language was avoided",
     ]
     for item in items:
         console.print(f"  [ ] {item}")

@@ -83,6 +83,12 @@ class Story(BaseModel):
     trend: list[dict] = Field(default_factory=list)
     active: bool = True
     created_at: datetime | None = None
+    significance_score: int | None = None
+    significance_factors: dict[str, Any] | None = None
+    confidence: str = ""
+    caveats: list[str] = Field(default_factory=list)
+    last_article_at: datetime | None = None
+    coverage_velocity: float | None = None
     impact_scored_at: datetime | None = None
     scored_at_article_count: int = 0
 
@@ -99,10 +105,13 @@ class Analysis(BaseModel):
     dateline: str = ""
     lede: str = ""
     context: str = ""
+    source_framings: list[dict] = Field(default_factory=list)
     contrasts: list[dict] = Field(default_factory=list)
     facts: list[dict] = Field(default_factory=list)
     bottom_line: str = ""
     coverage_note: str = ""
+    spectrum: str = ""
+    framing_check: str = ""
     generated_at: datetime | None = None
     article_count_at_gen: int = 0
 

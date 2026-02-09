@@ -22,37 +22,45 @@ from db.queries import (
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-5-20250929"
-MAX_TOKENS = 2000
 MIN_ARTICLES = 3
 STALE_GROWTH_RATIO = 0.30
 STALE_HOURS = 12
-MAX_HEADLINES_PER_GROUP = 8
+MAX_ARTICLES_PER_ANALYSIS = 8
+MAX_BODY_WORDS = 300
 
-BIAS_BUCKETS = {
-    "LEFT / FAR-LEFT": ("far-left", "left"),
-    "LEFT-CENTER": ("left-center",),
-    "CENTER": ("center",),
-    "RIGHT-CENTER": ("right-center",),
-    "RIGHT / FAR-RIGHT": ("right", "far-right"),
+BIAS_LABELS = {
+    "far-left": "LEFT",
+    "left": "LEFT",
+    "left-center": "LEFT-CENTER",
+    "center": "CENTER",
+    "right-center": "RIGHT-CENTER",
+    "right": "RIGHT",
+    "far-right": "RIGHT",
 }
 
 SYSTEM_PROMPT = (
-    "You are a wire-service journalist writing for ClearSignal, a platform "
-    "that helps readers see through media bias. Your job is to write a "
-    "neutral, factual analysis of a news story based on how multiple outlets "
-    "across the political spectrum are covering it.\n\n"
-    "RULES:\n"
-    "- Write in AP/Reuters wire-service style: factual, neutral, no editorializing\n"
-    "- Never use opinion language: 'shocking', 'alarming', 'exciting', 'controversial'\n"
-    "- Never take sides. Present what each side claims, let the reader decide.\n"
-    "- Use active voice and short sentences\n"
-    "- Attribute claims to their sources: 'CNN reported...', 'Fox News characterized...'\n"
-    "- When outlets disagree on framing, present both framings without judgment\n"
-    "- The 'bottom_line' should describe concrete impact on ordinary people\n"
-    "- The 'coverage_note' should reference actual data: article count, source count, "
-    "which parts of the spectrum are covering it and which aren't\n\n"
-    "Respond in JSON only. No other text."
+    "You are a news analyst for ClearSignal, a platform that shows readers "
+    "how the same story is covered across the political spectrum. Your "
+    "analysis must be rigorously neutral. You describe patterns — you do "
+    "not evaluate whether coverage is 'good,' 'bad,' 'sufficient,' or "
+    "'insufficient.' You never tell readers what to think.\n\n"
+    "Guiding principles:\n"
+    "- Attribute all contested claims to their source: 'according to "
+    "[outlet]' or 'as reported by [outlet].'\n"
+    "- When sources disagree on facts, state both versions without "
+    "adjudicating.\n"
+    "- Do not use emotional or evaluative adjectives (devastating, "
+    "unprecedented, controversial, alarming, historic) unless directly "
+    "quoting a source and attributing the quote.\n"
+    "- Do not infer motives for why outlets covered or framed a story "
+    "a particular way.\n"
+    "- If all sources agree on framing, say so. Do not fabricate "
+    "disagreement.\n"
+    "- Acknowledge when information is incomplete, developing, or "
+    "uncertain.\n"
+    "- Do not reference political lean labels (left, right, center). "
+    "Describe what outlets emphasize, not where they fall on a spectrum.\n\n"
+    "Respond in JSON only. No markdown, no preamble."
 )
 
 
@@ -109,7 +117,15 @@ def generate_analyses(
             result["skipped"] += 1
             continue
 
-        system, user_msg = _build_sonnet_prompt(story, articles)
+        # Classify per-article framing before building the analysis prompt
+        article_framings = []
+        try:
+            from analysis.framing import classify_article_framings
+            article_framings = classify_article_framings(articles)
+        except Exception as exc:
+            logger.warning("Framing classification failed for story %d: %s", story_id, exc)
+
+        system, user_msg = _build_sonnet_prompt(story, articles, article_framings)
         parsed = _call_sonnet(client, system, user_msg)
 
         if parsed is None:
@@ -117,16 +133,21 @@ def generate_analyses(
             result["errors"] += 1
             continue
 
+        spectrum = parsed.get("spectrum", "")
+        coverage_note = parsed.get("coverage_note", "") or spectrum
         analysis_data = {
             "story_id": story_id,
             "headline": parsed.get("headline", ""),
             "dateline": parsed.get("dateline", ""),
             "lede": parsed.get("lede", ""),
             "context": parsed.get("context", ""),
+            "source_framings": parsed.get("source_framings", []),
             "contrasts": parsed.get("contrasts", []),
             "facts": parsed.get("facts", []),
             "bottom_line": parsed.get("bottom_line", ""),
-            "coverage_note": parsed.get("coverage_note", ""),
+            "spectrum": spectrum,
+            "coverage_note": coverage_note,
+            "framing_check": parsed.get("framing_check", ""),
             "article_count_at_gen": story.get("article_count") or len(articles),
         }
 
@@ -157,17 +178,7 @@ def _resolve_stories(story_ids: list[int] | None) -> list[dict]:
 
 
 def _needs_analysis(story: dict) -> bool:
-    """Check if a story needs a new or updated analysis.
-
-    Returns True if:
-    - Story has >= MIN_ARTICLES articles AND no analysis exists
-    - Article count grew >30% since last generation
-    - Analysis is older than 12 hours AND story has new articles
-
-    Returns False if:
-    - Story has fewer than MIN_ARTICLES articles
-    - Analysis exists and is fresh
-    """
+    """Check if a story needs a new or updated analysis."""
     article_count = story.get("article_count") or 0
     if article_count < MIN_ARTICLES:
         return False
@@ -195,22 +206,154 @@ def _needs_analysis(story: dict) -> bool:
     return False
 
 
-def _prioritise(stories: list[dict]) -> list[dict]:
-    """Sort candidates by analysis priority.
+def _get_article_lean(article: dict) -> str:
+    """Get the political lean bucket for an article."""
+    domain = article.get("source_domain", "")
+    bias_info = SOURCE_BIAS.get(domain)
+    label = bias_info["label"] if bias_info else "center"
+    return BIAS_LABELS.get(label, "CENTER")
 
-    Priority tiers (descending):
-    1. No analysis + impact_score >= 50
-    2. No analysis + article_count >= 10
-    3. Stale analysis (grew >30%)
-    4. Everything else by impact_score descending
+
+def _lean_diversity_score(articles: list[dict]) -> float:
+    """Score 0-1 based on how many different political leans cover this story."""
+    leans: set[str] = set()
+    for a in articles:
+        lean = _get_article_lean(a)
+        if "LEFT" in lean:
+            leans.add("left")
+        if "CENTER" in lean:
+            leans.add("center")
+        if "RIGHT" in lean:
+            leans.add("right")
+    return {0: 0.0, 1: 0.2, 2: 0.6, 3: 1.0}.get(len(leans), 0.0)
+
+
+def _select_articles(articles: list[dict]) -> list[dict]:
+    """Select up to MAX_ARTICLES_PER_ANALYSIS articles for the prompt.
+
+    Strategy:
+    1. Pick 1 article from each available political lean
+    2. Fill remaining slots with most recent articles
+    3. Always include earliest and most recent article
+    """
+    if len(articles) <= MAX_ARTICLES_PER_ANALYSIS:
+        return articles
+
+    selected: list[dict] = []
+    selected_ids: set[int] = set()
+
+    # Sort by published_at for recency
+    sorted_by_date = sorted(
+        articles,
+        key=lambda a: a.get("published_at") or "",
+        reverse=True,
+    )
+
+    # Always include most recent article
+    if sorted_by_date:
+        selected.append(sorted_by_date[0])
+        selected_ids.add(sorted_by_date[0].get("id"))
+
+    # Always include earliest article
+    earliest = sorted_by_date[-1] if sorted_by_date else None
+    if earliest and earliest.get("id") not in selected_ids:
+        selected.append(earliest)
+        selected_ids.add(earliest.get("id"))
+
+    # Group by lean, pick one from each
+    lean_groups: dict[str, list[dict]] = {}
+    for a in articles:
+        lean = _get_article_lean(a)
+        lean_groups.setdefault(lean, []).append(a)
+
+    for lean, group in lean_groups.items():
+        if len(selected) >= MAX_ARTICLES_PER_ANALYSIS:
+            break
+        # Pick the article with the most body text from this lean
+        group.sort(key=lambda a: len(a.get("body") or ""), reverse=True)
+        for a in group:
+            if a.get("id") not in selected_ids:
+                selected.append(a)
+                selected_ids.add(a.get("id"))
+                break
+
+    # Fill remaining slots with most recent articles
+    for a in sorted_by_date:
+        if len(selected) >= MAX_ARTICLES_PER_ANALYSIS:
+            break
+        if a.get("id") not in selected_ids:
+            selected.append(a)
+            selected_ids.add(a.get("id"))
+
+    return selected
+
+
+def _format_article_content(article: dict) -> str:
+    """Format a single article for the prompt — source + title + description + body excerpt.
+
+    NOTE: Bias labels are intentionally NOT included in the prompt context.
+    The LLM should classify framing from article text alone, without
+    knowing the outlet's political lean label (CONFLICT-05 resolution).
+    """
+    source = article.get("source_name") or article.get("source_domain", "unknown")
+    title = article.get("title", "(no title)")
+    published = article.get("published_at", "")
+
+    parts = [f"Source: {source}"]
+    parts.append(f"Headline: {title}")
+    if published:
+        parts.append(f"Published: {published}")
+
+    desc = (article.get("description") or "").strip()
+    if desc:
+        parts.append(desc)
+
+    body = (article.get("body") or "").strip()
+    if body:
+        words = body.split()
+        excerpt = " ".join(words[:MAX_BODY_WORDS])
+        if len(words) > MAX_BODY_WORDS:
+            excerpt += "..."
+        parts.append(f"Excerpt: {excerpt}")
+
+    return "\n".join(parts)
+
+
+def _prioritise(stories: list[dict]) -> list[dict]:
+    """Sort candidates by composite priority.
+
+    New formula: significance threshold + category weight + diversity + impact + staleness.
     """
 
-    def sort_key(story: dict) -> tuple:
-        has_analysis = get_analysis(story["id"]) is not None
-        impact = story.get("impact_score") or 0
-        article_count = story.get("article_count") or 0
+    def sort_key(story: dict) -> float:
+        # Skip low-significance stories
+        sig = story.get("significance_score") or 0
+        if sig > 0 and sig < settings.min_significance_score:
+            return 0.0  # will sort last
 
-        if not has_analysis and impact >= 50:
+        has_analysis = get_analysis(story["id"]) is not None
+        impact = (story.get("impact_score") or 0) / 100.0
+
+        cat = (story.get("category") or "").strip()
+        cat_weight = {
+            # Full category names (new format)
+            "Politics & Law": 1.0,
+            "World & Security": 0.9,
+            "Science & Health": 0.8,
+            "Economy & Business": 0.6,
+            # Legacy uppercase keys (backward compat)
+            "POLITICS": 1.0, "LAW": 1.0,
+            "WORLD": 0.9, "MILITARY": 0.9,
+            "HEALTH": 0.8, "SCIENCE": 0.8,
+            "BUSINESS": 0.6, "ECONOMY": 0.6,
+        }.get(cat, 0.1)
+
+        articles = get_articles_for_story(story["id"])
+        diversity = _lean_diversity_score(articles)
+
+        # Staleness tier
+        article_count = story.get("article_count") or 0
+        if not has_analysis and (story.get("impact_score") or 0) >= 50:
             tier = 0
         elif not has_analysis and article_count >= 10:
             tier = 1
@@ -218,104 +361,130 @@ def _prioritise(stories: list[dict]) -> list[dict]:
             tier = 2
         else:
             tier = 3
+        staleness = 1.0 - (tier / 3.0)
 
-        return (tier, -impact)
+        score = impact * 0.3 + diversity * 0.3 + cat_weight * 0.2 + staleness * 0.2
+        return -score  # negate so higher score sorts first
 
     return sorted(stories, key=sort_key)
 
 
-def _build_sonnet_prompt(story: dict, articles: list[dict]) -> tuple[str, str]:
+def _build_sonnet_prompt(
+    story: dict,
+    articles: list[dict],
+    article_framings: list[dict] | None = None,
+) -> tuple[str, str]:
     """Build system prompt and user message for Claude Sonnet.
 
-    Groups articles by bias bucket, formats headlines, and assembles
-    the structured user message.
+    Sends article CONTENT (title + description + first 300 words of body)
+    for up to 8 selected articles, plus optional per-article framing data.
 
     Returns: (system_prompt, user_message)
     """
-    # Group articles by bias bucket
-    buckets: dict[str, list[dict]] = {name: [] for name in BIAS_BUCKETS}
+    # Select articles
+    selected = _select_articles(articles)
 
-    for article in articles:
-        domain = article.get("source_domain", "")
-        bias_info = SOURCE_BIAS.get(domain)
-        label = bias_info["label"] if bias_info else "center"
-        placed = False
-        for bucket_name, labels in BIAS_BUCKETS.items():
-            if label in labels:
-                buckets[bucket_name].append(article)
-                placed = True
-                break
-        if not placed:
-            buckets["CENTER"].append(article)
-
-    # For large stories, sample headlines
-    for bucket_name in buckets:
-        arts = buckets[bucket_name]
-        # Sort by recency
-        arts.sort(key=lambda a: a.get("published_at") or "", reverse=True)
-        if len(arts) > MAX_HEADLINES_PER_GROUP:
-            buckets[bucket_name] = arts[:MAX_HEADLINES_PER_GROUP]
-
-    # Format headline sections
-    headline_sections = []
-    for bucket_name in BIAS_BUCKETS:
-        arts = buckets[bucket_name]
-        count = len(arts)
-        headline_sections.append(f"{bucket_name} ({count}):")
-        if count == 0:
-            headline_sections.append("(no coverage from this segment)")
-        else:
-            for a in arts:
-                domain = a.get("source_domain", "unknown")
-                title = a.get("title", "(no title)")
-                headline_sections.append(f"  - [{domain}] {title}")
-        headline_sections.append("")
+    # Format article content sections
+    article_sections = []
+    for a in selected:
+        article_sections.append(_format_article_content(a))
+        article_sections.append("---")
 
     # Unique source count
     source_domains = {a.get("source_domain") for a in articles if a.get("source_domain")}
     source_count = len(source_domains)
 
+    # Build significance factors context if available
+    sig_factors = story.get("significance_factors")
+    sig_factors_str = ""
+    if sig_factors:
+        if isinstance(sig_factors, str):
+            sig_factors_str = sig_factors
+        else:
+            sig_factors_str = json.dumps(sig_factors)
+
     # Build user message
     user_msg = (
-        f"STORY: {story.get('topic', 'Unknown')}\n"
-        f"IMPACT SCORE: {story.get('impact_score', 0)}/100\n"
-        f"ATTENTION SCORE: {story.get('attention_score', 0)}/100\n"
-        f"STATUS: {story.get('status', 'unknown')}\n"
-        f"ARTICLES: {len(articles)} from {source_count} sources\n\n"
-        f"HEADLINES BY POLITICAL LEAN:\n\n"
-        + "\n".join(headline_sections)
-        + f"SENTIMENT: left={story.get('sentiment_left', 'n/a')}, "
-        f"center={story.get('sentiment_center', 'n/a')}, "
-        f"right={story.get('sentiment_right', 'n/a')}\n\n"
-        'Generate a neutral analysis in this JSON format:\n'
+        f"Analyze this story for ClearSignal readers.\n\n"
+        f"Story: {story.get('topic', 'Unknown')}\n"
+        f"Category: {story.get('category', 'unknown')}\n"
+        f"Impact score: {story.get('impact_score', 0)}/100"
+        + (f" (factors: {sig_factors_str})" if sig_factors_str else "")
+        + f"\nAttention score: {story.get('attention_score', 0)}/100\n"
+        f"Number of articles: {len(articles)} from {source_count} sources\n\n"
+        f"Article excerpts (first {MAX_BODY_WORDS} words each, "
+        f"{len(selected)} of {len(articles)}):\n\n"
+        + "\n".join(article_sections)
+        + "\n\n"
+        + (
+            "Per-article framing analysis (pre-computed):\n"
+            + "\n".join(
+                f"- {f['source']}: primary framing = {f['primary_framing']}, "
+                f"notable inclusions = {f['notable_inclusions']}, "
+                f"notable omissions = {f['notable_omissions']}"
+                for f in (article_framings or [])
+            )
+            + "\n\n"
+            if article_framings
+            else ""
+        )
+        + "Produce the following fields. Respond ONLY with valid JSON, "
+        "no markdown, no preamble:\n\n"
         "{\n"
-        '  "headline": "Neutral 8-15 word headline, no opinion words, AP style",\n'
-        '  "dateline": "CITY (ClearSignal)",\n'
-        '  "lede": "2-3 sentence lede answering who/what/when/where. Factual only.",\n'
-        '  "context": "2-3 sentences of background. Why does this matter? What led to this?",\n'
+        '  "headline": "<max 12 words, neutral, factual, no emotional adjectives>",\n'
+        '  "lede": "<2-3 sentences answering who/what/when/where. Max 60 words. Factual only.>",\n'
+        '  "context": "<5-7 paragraphs. In-depth background explaining the history, '
+        "key players, stakes, and current status. Draw extensively on the article "
+        "excerpts. Use neutral language. Attribute claims. State disagreements "
+        "explicitly. Include relevant data, statistics, and quotes from sources. "
+        'Be substantive — this is the main body readers come for.>",\n'
+        '  "source_framings": [\n'
+        "    {\n"
+        '      "source": "outlet name",\n'
+        '      "framings": ["economic impact", "policy/regulatory"],\n'
+        '      "primary_framing": "economic impact",\n'
+        '      "notable_inclusions": "Facts/angles present here but absent from others, or none identified",\n'
+        '      "notable_omissions": "Facts/angles in other articles but absent here, or none identified"\n'
+        "    }\n"
+        "  ],\n"
         '  "contrasts": [\n'
         "    {\n"
-        '      "theme": "What aspect of the story outlets disagree on",\n'
+        '      "theme": "What differs: e.g., cause attributed, proposed solution, affected group emphasized",\n'
         '      "sourceA": "outlet name",\n'
-        '      "biasA": "left-center",\n'
+        '      "framingA": "economic impact",\n'
         '      "claimA": "How this outlet frames/reports it",\n'
-        '      "sourceB": "another outlet",\n'
-        '      "biasB": "right-center",\n'
-        '      "claimB": "How this outlet frames/reports it"\n'
+        '      "sourceB": "outlet with DIFFERENT framing",\n'
+        '      "framingB": "social/cultural impact",\n'
+        '      "claimB": "Meaningfully different framing from sourceA"\n'
         "    }\n"
         "  ],\n"
         '  "facts": [\n'
         "    {\n"
-        '      "claim": "A specific factual claim made in coverage",\n'
-        '      "reality": "What the verifiable facts show",\n'
+        '      "claim": "A specific factual claim from coverage",\n'
+        '      "reality": "What verifiable facts show",\n'
         '      "verdict": "confirmed | misleading | lacks context | unverified"\n'
         "    }\n"
         "  ],\n"
-        '  "bottom_line": "1-2 sentences: concrete consequences for ordinary people. No jargon.",\n'
-        '  "coverage_note": "Reference actual numbers: X articles from Y sources. Note which '
-        "political leans are covering this and which aren't. Note if coverage volume matches "
-        'the story\'s real-world significance."\n'
-        "}"
+        '  "bottom_line": "<3-4 sentences. What is known, what is uncertain, what to watch. '
+        "Explain concrete impacts on the reader's taxes, rights, safety, job, or health. "
+        'No opinion, but be specific about real-world consequences.>",\n'
+        '  "spectrum": "<1-2 sentences describing the overall pattern of coverage: '
+        "who covered it, from what angles, and what the range of framing looks like. "
+        'Descriptive only.>",\n'
+        '  "coverage_note": "<1 sentence: This story was covered by N sources. '
+        "Coverage volume is [higher than / lower than / roughly proportional to] "
+        'estimated real-world impact. No editorializing beyond this.>",\n'
+        '  "framing_check": "<Internal audit: what framing choices did you make, '
+        "and what alternatives did you consider? For transparency logging, "
+        'not user display.>"\n'
+        "}\n\n"
+        "IMPORTANT:\n"
+        "- If all articles share the same framing and there are no meaningful "
+        'contrasts, return "contrasts": [] and note this in spectrum.\n'
+        "- If fewer than 3 articles are available, add to coverage_note: "
+        '"Based on limited source sample (N articles)."\n'
+        "- Do not reference political lean labels (left, right, center). "
+        "Describe what outlets emphasize, not where they fall on a spectrum."
     )
 
     return SYSTEM_PROMPT, user_msg
@@ -327,19 +496,20 @@ def _call_sonnet(client: Anthropic, system: str, user_msg: str) -> dict | None:
     Retries once on parse failure with a corrective nudge.
     Returns parsed dict or None.
     """
+    model = settings.claude_model
+    max_tokens = settings.max_analysis_tokens
+
     for attempt in range(2):
         try:
             messages = [{"role": "user", "content": user_msg}]
             if attempt == 1:
-                messages.append({"role": "assistant", "content": "{"})
-                # Retry nudge: ask for valid JSON
                 messages = [
                     {"role": "user", "content": user_msg + "\n\nPlease respond in valid JSON only."}
                 ]
 
             response = client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
+                model=model,
+                max_tokens=max_tokens,
                 system=system,
                 messages=messages,
             )
@@ -400,7 +570,6 @@ def _parse_response(raw: str) -> dict | None:
 
 
 if __name__ == "__main__":
-    import asyncio
     import sys
 
     logging.basicConfig(

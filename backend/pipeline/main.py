@@ -1,102 +1,219 @@
 """
 ClearSignal pipeline — CLI entry point and daemon scheduler.
 
+Stages can be run individually or as a full pipeline.
+
 Usage:
-    python -m pipeline.main              # daemon mode (default)
-    python -m pipeline.main --once       # single run, then exit
-    python -m pipeline.main --dry-run    # fetch only, no DB writes
-    python -m pipeline.main --interval 5 # custom interval in minutes
+    python -m pipeline.main                  # full pipeline (all stages)
+    python -m pipeline.main ingest           # ingest only
+    python -m pipeline.main cluster          # cluster only
+    python -m pipeline.main score            # score only
+    python -m pipeline.main scrape           # scrape only
+    python -m pipeline.main analyze          # analyze only
+    python -m pipeline.main --daemon         # daemon mode (full, recurring)
+    python -m pipeline.main --dry-run        # dry-run ingest (no DB writes)
+    python -m pipeline.main ingest --dry-run # dry-run a specific stage
 """
 
 import argparse
 import logging
 import signal
 import threading
+import time
 from datetime import datetime, timezone
 
 from rich.console import Console
 from rich.logging import RichHandler
+from rich.panel import Panel
+from rich.text import Text
 
 from config.settings import settings
 from pipeline.ingest import run_ingestion
-from pipeline.process import run_analysis, run_clustering, run_scoring
+from pipeline.process import run_analysis, run_clustering, run_scoring, run_scraping
 
 logger = logging.getLogger(__name__)
 console = Console()
 
+BANNER = r"""
+   ___  _                  ___  _                    _
+  / __\| |  ___   __ _  _ / __\(_)  __ _  _ __    __ _| |
+ / /   | | / _ \ / _` || '__/\__ \ | / _` || '_ \  / _` || |
+/ /___ | ||  __/| (_| || |   ___) || (_| || | | || (_| || |
+\____/ |_| \___| \__,_||_|  |____/ \__, ||_| |_| \__,_||_|
+                                    |___/
+"""
 
-# ── Pipeline functions ────────────────────────────────────────────────────
+STAGES = {
+    "ingest":  "Fetch, normalize, deduplicate, embed, store",
+    "cluster": "Assign articles to stories, discover clusters",
+    "score":   "Impact scoring, attention, gap detection",
+    "scrape":  "Extract article bodies via trafilatura",
+    "analyze": "Generate Claude-powered neutral analyses",
+}
 
 
-def run_once(dry_run: bool = False) -> None:
-    """Execute a single ingestion cycle.
+# ── Banner ─────────────────────────────────────────────────────────────────
 
-    Args:
-        dry_run: If True, fetch and process without DB writes.
-    """
-    console.rule("[bold blue]ClearSignal — Ingestion Cycle[/bold blue]")
+
+def _print_banner(mode: str, stage: str | None = None) -> None:
+    """Print the ClearSignal startup banner."""
+    title = Text()
+    title.append("ClearSignal", style="bold blue")
+    title.append(" Pipeline", style="bold white")
+
+    subtitle_parts = []
+    if stage:
+        subtitle_parts.append(f"Stage: [bold cyan]{stage}[/bold cyan]")
+    else:
+        subtitle_parts.append(f"Mode: [bold cyan]{mode}[/bold cyan]")
+    subtitle_parts.append(f"Time: [dim]{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}[/dim]")
+
+    console.print()
+    console.print(Panel(
+        "\n".join(subtitle_parts),
+        title=title,
+        border_style="blue",
+        padding=(1, 3),
+    ))
+    console.print()
+
+
+def _print_stage_header(name: str, description: str) -> None:
+    """Print a stage header line."""
+    console.rule(f"[bold]{name}[/bold]  [dim]{description}[/dim]")
+
+
+def _print_done(duration: float | None = None) -> None:
+    """Print completion message."""
+    msg = "[bold green]Done.[/bold green]"
+    if duration is not None:
+        msg += f"  [dim]({duration:.1f}s)[/dim]"
+    console.print(f"\n{msg}\n")
+
+
+# ── Individual stage runners ───────────────────────────────────────────────
+
+
+def stage_ingest(dry_run: bool = False) -> None:
+    """Run the ingest stage."""
+    _print_stage_header("Ingest", STAGES["ingest"])
+    t0 = time.time()
+    run_ingestion(dry_run=dry_run)
+    _print_done(time.time() - t0)
+
+
+def stage_cluster() -> None:
+    """Run the cluster stage."""
+    _print_stage_header("Cluster", STAGES["cluster"])
+    t0 = time.time()
+    run_clustering()
+    _print_done(time.time() - t0)
+
+
+def stage_score() -> None:
+    """Run the score stage."""
+    _print_stage_header("Score", STAGES["score"])
+    t0 = time.time()
+    run_scoring()
+    _print_done(time.time() - t0)
+
+
+def stage_scrape() -> None:
+    """Run the scrape stage."""
+    _print_stage_header("Scrape", STAGES["scrape"])
+    t0 = time.time()
+    run_scraping(limit=50)
+    _print_done(time.time() - t0)
+
+
+def stage_analyze() -> None:
+    """Run the analyze stage."""
+    _print_stage_header("Analyze", STAGES["analyze"])
+    t0 = time.time()
+    run_analysis()
+    _print_done(time.time() - t0)
+
+
+STAGE_RUNNERS = {
+    "ingest":  stage_ingest,
+    "cluster": stage_cluster,
+    "score":   stage_score,
+    "scrape":  stage_scrape,
+    "analyze": stage_analyze,
+}
+
+
+# ── Pipeline functions ─────────────────────────────────────────────────────
+
+
+def run_full(dry_run: bool = False) -> None:
+    """Execute the full pipeline: ingest → cluster → score → scrape → analyze."""
+    _print_banner("Full pipeline")
+    t0 = time.time()
 
     result = run_ingestion(dry_run=dry_run)
 
-    # ── Clustering + Scoring ────────────────────────────────────────
     if not dry_run and result.new_stored > 0:
-        run_clustering()
-        run_scoring()
+        stage_cluster()
+        stage_score()
 
-    # ── Analysis — always check, even without new articles ────────
-    # Stories may need analysis due to staleness or first-run population
     if not dry_run:
-        run_analysis()
+        stage_scrape()
 
-    logger.info(
-        "Cycle complete: %d fetched, %d stored, %d errors (%.1fs)",
-        result.total_fetched,
-        result.new_stored,
-        result.errors,
-        result.duration_seconds,
-    )
+    if not dry_run:
+        stage_analyze()
+
+    elapsed = time.time() - t0
+    console.print()
+    console.print(Panel(
+        f"[bold]Fetched:[/bold] {result.total_fetched}  "
+        f"[bold]Stored:[/bold] {result.new_stored}  "
+        f"[bold]Errors:[/bold] {result.errors}  "
+        f"[bold]Time:[/bold] {elapsed:.1f}s",
+        title="[bold green]Pipeline Complete[/bold green]",
+        border_style="green",
+        padding=(0, 2),
+    ))
+    console.print()
+
+
+def run_single_stage(stage: str, dry_run: bool = False) -> None:
+    """Execute a single pipeline stage."""
+    _print_banner("Single stage", stage=stage)
+    runner = STAGE_RUNNERS[stage]
+    if stage == "ingest":
+        runner(dry_run=dry_run)
+    else:
+        runner()
 
 
 def run_daemon(interval_minutes: int = 15) -> None:
-    """Run the ingestion pipeline on a recurring schedule.
-
-    Uses APScheduler with an IntervalTrigger.  Runs immediately on start,
-    then every *interval_minutes* minutes.  Shuts down cleanly on Ctrl+C.
-
-    Args:
-        interval_minutes: Minutes between ingestion runs (default 15).
-    """
+    """Run the full pipeline on a recurring schedule."""
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.interval import IntervalTrigger
 
-    console.rule("[bold blue]ClearSignal — Daemon Mode[/bold blue]")
+    _print_banner("Daemon")
     console.print(
         f"  Schedule: every [bold]{interval_minutes}[/bold] minutes\n"
         f"  Press [bold]Ctrl+C[/bold] to stop\n",
     )
 
-    # ── Graceful shutdown via signal handler ──────────────────────────
     shutdown = threading.Event()
 
     def _on_signal(signum: int, _frame: object) -> None:
-        logger.info(
-            "Shutdown requested (signal %d) — finishing current cycle…",
-            signum,
-        )
+        logger.info("Shutdown requested (signal %d) — finishing current cycle…", signum)
         shutdown.set()
 
     signal.signal(signal.SIGINT, _on_signal)
     try:
         signal.signal(signal.SIGTERM, _on_signal)
     except (OSError, ValueError):
-        pass  # SIGTERM not reliably available on all platforms
+        pass
 
-    # ── Configure scheduler ───────────────────────────────────────────
     scheduler = BackgroundScheduler()
 
     def _scheduled_cycle() -> None:
-        """Run one cycle and print next scheduled time."""
-        run_once(dry_run=False)
+        run_full(dry_run=False)
         jobs = scheduler.get_jobs()
         if jobs and jobs[0].next_run_time:
             next_time = jobs[0].next_run_time.strftime("%H:%M:%S")
@@ -106,8 +223,8 @@ def run_daemon(interval_minutes: int = 15) -> None:
         _scheduled_cycle,
         trigger=IntervalTrigger(minutes=interval_minutes),
         id="ingestion",
-        name="ClearSignal ingestion",
-        next_run_time=datetime.now(timezone.utc),  # run immediately
+        name="ClearSignal pipeline",
+        next_run_time=datetime.now(timezone.utc),
         max_instances=1,
         coalesce=True,
     )
@@ -115,7 +232,6 @@ def run_daemon(interval_minutes: int = 15) -> None:
     scheduler.start()
     logger.info("Scheduler started — interval=%d min", interval_minutes)
 
-    # ── Block main thread until shutdown signal ───────────────────────
     while not shutdown.is_set():
         shutdown.wait(timeout=1.0)
 
@@ -123,24 +239,47 @@ def run_daemon(interval_minutes: int = 15) -> None:
     console.print("\n[bold]Shutdown complete.[/bold]")
 
 
-# ── CLI entry point ───────────────────────────────────────────────────────
+# ── CLI entry point ────────────────────────────────────────────────────────
 
 
 def main() -> None:
-    """Parse CLI arguments and dispatch to run_once or run_daemon."""
+    """Parse CLI arguments and dispatch."""
     parser = argparse.ArgumentParser(
         prog="python -m pipeline.main",
-        description="ClearSignal news ingestion pipeline",
+        description="ClearSignal news pipeline",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "stages:\n"
+            "  ingest    Fetch, normalize, deduplicate, embed, store\n"
+            "  cluster   Assign articles to stories, discover clusters\n"
+            "  score     Impact scoring, attention, gap detection\n"
+            "  scrape    Extract article bodies via trafilatura\n"
+            "  analyze   Generate Claude-powered neutral analyses\n"
+            "\n"
+            "examples:\n"
+            "  python -m pipeline.main                  Full pipeline\n"
+            "  python -m pipeline.main ingest           Ingest only\n"
+            "  python -m pipeline.main analyze          Analyze only\n"
+            "  python -m pipeline.main --daemon         Daemon mode\n"
+            "  python -m pipeline.main ingest --dry-run Dry-run ingest"
+        ),
     )
     parser.add_argument(
-        "--once",
+        "stage",
+        nargs="?",
+        choices=list(STAGES.keys()),
+        default=None,
+        help="Run a specific pipeline stage (omit for full pipeline)",
+    )
+    parser.add_argument(
+        "--daemon",
         action="store_true",
-        help="Run a single ingestion cycle and exit",
+        help="Run full pipeline on a recurring schedule",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Fetch and process without DB writes (implies --once)",
+        help="Fetch and process without DB writes",
     )
     parser.add_argument(
         "--interval",
@@ -151,7 +290,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # ── Configure logging with Rich ───────────────────────────────────
+    # ── Configure logging with Rich ─────────────────────────────────────
     logging.basicConfig(
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(message)s",
@@ -163,13 +302,13 @@ def main() -> None:
         )],
     )
 
-    # ── Dispatch ──────────────────────────────────────────────────────
-    if args.dry_run:
-        run_once(dry_run=True)
-    elif args.once:
-        run_once(dry_run=False)
-    else:
+    # ── Dispatch ────────────────────────────────────────────────────────
+    if args.daemon:
         run_daemon(interval_minutes=args.interval)
+    elif args.stage:
+        run_single_stage(args.stage, dry_run=args.dry_run)
+    else:
+        run_full(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,10 @@ developing, peak, fading, stale).
 import logging
 from datetime import datetime, timezone
 
-from db.queries import get_active_stories, get_articles_for_story, update_story_metadata
+from db.queries import (
+    get_active_stories, get_articles_for_story, update_story_metadata,
+    get_daily_counts, recalculate_daily_counts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,53 +83,29 @@ def _find_peak(trend: list[dict]) -> tuple[int, str]:
     return best["count"], best["date"]
 
 
-def _determine_status(trend: list[dict], hours_since_last: float) -> str:
-    """Determine story lifecycle status from its trend and recency.
+def _determine_status(age_hours: float, hours_since_last: float) -> str:
+    """Determine story lifecycle status from age and recency.
 
     Statuses (checked in priority order):
-        * ``"breaking"``   — first seen < 4 hours ago
-        * ``"developing"`` — less than 24 hours old and still getting articles
-        * ``"stale"``      — no new articles in 24+ hours
-        * ``"peak"``       — today's count >= yesterday's (still growing)
-        * ``"fading"``     — today's count < 50 % of peak day
+        * ``"breaking"``    — story first seen < 6 hours ago
+        * ``"developing"``  — last article < 24 hours ago
+        * ``"ongoing"``     — last article < 72 hours ago
+        * ``"stale"``       — no new articles in 72+ hours
 
     Args:
-        trend: Output of ``_compute_trend`` (must not be empty).
+        age_hours: Hours since the earliest article in the story.
         hours_since_last: Hours between now and the most recent article.
 
     Returns:
         One of the status strings above.
     """
-    if not trend:
-        return "stale"
-
-    total_days = len(trend)
-
-    # Age of the entire story in hours
-    story_age_hours = (total_days - 1) * 24 + (
-        datetime.now(timezone.utc).hour  # partial day
-    )
-
-    if story_age_hours < 4:
+    if age_hours < 6:
         return "breaking"
-
-    if total_days <= 1 and hours_since_last < 24:
+    if hours_since_last < 24:
         return "developing"
-
-    if hours_since_last >= 24:
-        return "stale"
-
-    today_count = trend[-1]["count"]
-    yesterday_count = trend[-2]["count"] if len(trend) >= 2 else 0
-
-    if today_count >= yesterday_count and today_count > 0:
-        return "peak"
-
-    peak_count = max(d["count"] for d in trend)
-    if peak_count > 0 and today_count < peak_count * 0.5:
-        return "fading"
-
-    return "developing"
+    if hours_since_last < 72:
+        return "ongoing"
+    return "stale"
 
 
 # ─── public API ───────────────────────────────────────────────────────────────
@@ -181,7 +160,13 @@ def update_timelines(
                 logger.debug("Story %d has no articles, skipping", story_id)
                 continue
 
-            trend = _compute_trend(articles)
+            # Sync story_daily_counts table (authoritative recount from articles)
+            recalculate_daily_counts(story_id)
+
+            # Build trend from the daily counts table
+            from scoring.trends import compute_trend_from_counts
+            daily_rows = get_daily_counts(story_id)
+            trend = compute_trend_from_counts(daily_rows) if daily_rows else _compute_trend(articles)
 
             if not trend:
                 logger.debug("Story %d has no datable articles, skipping", story_id)
@@ -189,28 +174,44 @@ def update_timelines(
 
             peak_count, peak_date = _find_peak(trend)
 
-            # Hours since most recent article
+            # Compute timestamps from article published_at
             pub_dates = [
                 datetime.fromisoformat(a["published_at"])
                 for a in articles
                 if a.get("published_at")
             ]
+            if not pub_dates:
+                logger.debug("Story %d has no datable articles, skipping", story_id)
+                continue
+            now = datetime.now(timezone.utc)
             latest = max(pub_dates)
-            hours_since_last = (
-                datetime.now(timezone.utc) - latest.replace(tzinfo=timezone.utc)
-            ).total_seconds() / 3600
-
-            status = _determine_status(trend, hours_since_last)
-
             earliest = min(pub_dates)
 
-            # Persist to DB
+            # Ensure timezone-aware
+            if latest.tzinfo is None:
+                latest = latest.replace(tzinfo=timezone.utc)
+            if earliest.tzinfo is None:
+                earliest = earliest.replace(tzinfo=timezone.utc)
+
+            age_hours = (now - earliest).total_seconds() / 3600
+            hours_since_last = (now - latest).total_seconds() / 3600
+
+            status = _determine_status(age_hours, hours_since_last)
+
+            # Coverage velocity: articles per day
+            age_days = max(age_hours / 24, 0.1)  # avoid division by zero
+            article_count = story.get("article_count") or len(articles)
+            coverage_velocity = round(article_count / age_days, 2) if article_count > 1 else None
+
+            # Persist to stories.trend JSONB (frontend reads this field)
             update_story_metadata(
                 story_id,
                 trend=[{"date": d["date"], "count": d["count"]} for d in trend],
                 peak_date=peak_date,
                 status=status,
                 first_seen=earliest.isoformat(),
+                last_article_at=latest.isoformat(),
+                coverage_velocity=coverage_velocity,
             )
 
             results.append({

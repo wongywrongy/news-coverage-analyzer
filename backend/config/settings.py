@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     # ── Embedding mode ────────────────────────────────────
     embedding_mode: Literal["openai", "local"] = "openai"
 
+    # ── Analysis ─────────────────────────────────────────
+    analysis_batch_size: int = 10
+    min_significance_score: int = 45
+    max_analysis_tokens: int = 5000
+    openai_model: str = "gpt-4o-mini"
+    claude_model: str = "claude-sonnet-4-20250514"
+
     # ── Logging ───────────────────────────────────────────
     log_level: str = "INFO"
 

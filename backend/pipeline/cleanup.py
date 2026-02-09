@@ -226,9 +226,9 @@ def force_rescore() -> dict:
 
     console.print("\nDetecting gaps…")
     gap_result = detect_gaps()
-    console.print(f"  Buried: {len(gap_result['buried'])}")
-    console.print(f"  Overcovered: {len(gap_result['overcovered'])}")
-    console.print(f"  Balanced: {len(gap_result['balanced'])}")
+    console.print(f"  Significance > coverage: {len(gap_result['significance_exceeds_coverage'])}")
+    console.print(f"  Coverage > significance: {len(gap_result['coverage_exceeds_significance'])}")
+    console.print(f"  Roughly proportional:    {len(gap_result['roughly_proportional'])}")
 
     return {
         "impact": impact_result,
@@ -260,38 +260,38 @@ def validate() -> None:
             f"{(s.get('topic') or '?')[:50]}"
         )
 
-    # Top 5 buried
-    buried = sorted(
+    # Top 5 significance > coverage
+    sig_sorted = sorted(
         stories,
         key=lambda s: (s.get("impact_score") or 0)
         - (s.get("attention_score") or 0),
         reverse=True,
     )
-    console.print("\n[bold]TOP 5 BURIED (underreported):[/bold]")
-    for s in buried[:5]:
+    console.print("\n[bold]TOP 5 SIGNIFICANCE > COVERAGE:[/bold]")
+    for s in sig_sorted[:5]:
         gap = (s.get("impact_score") or 0) - (s.get("attention_score") or 0)
         if gap < 20:
             break
         console.print(
-            f"  gap +{gap:.0f} | impact={s.get('impact_score', 0):.0f} "
-            f"attention={s.get('attention_score', 0):.0f} | "
+            f"  gap +{gap:.0f} | significance={s.get('impact_score', 0):.0f} "
+            f"coverage={s.get('attention_score', 0):.0f} | "
             f"{(s.get('topic') or '?')[:50]}"
         )
 
-    # Top 5 overcovered
-    overcovered = sorted(
+    # Top 5 coverage > significance
+    cov_sorted = sorted(
         stories,
         key=lambda s: (s.get("impact_score") or 0)
         - (s.get("attention_score") or 0),
     )
-    console.print("\n[bold]TOP 5 OVERCOVERED (overreported):[/bold]")
-    for s in overcovered[:5]:
+    console.print("\n[bold]TOP 5 COVERAGE > SIGNIFICANCE:[/bold]")
+    for s in cov_sorted[:5]:
         gap = (s.get("impact_score") or 0) - (s.get("attention_score") or 0)
         if gap > -20:
             break
         console.print(
-            f"  gap {gap:.0f} | impact={s.get('impact_score', 0):.0f} "
-            f"attention={s.get('attention_score', 0):.0f} | "
+            f"  gap {gap:.0f} | significance={s.get('impact_score', 0):.0f} "
+            f"coverage={s.get('attention_score', 0):.0f} | "
             f"{(s.get('topic') or '?')[:50]}"
         )
 
