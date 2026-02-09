@@ -311,20 +311,52 @@ def _print_scoring_summary(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  EDITORIAL SELECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def run_selection() -> dict:
+    """Run editorial selection: GPT-4o-mini picks stories for Claude analysis.
+
+    Returns selection stats dict.
+    """
+    console.rule("[bold yellow]Editorial Selection[/bold yellow]")
+
+    from pipeline.select import run_editorial_selection
+
+    result = run_editorial_selection()
+
+    if result.get("disabled"):
+        console.print("  Selection disabled — using staleness-based triggers")
+    elif result.get("error"):
+        console.print(f"  [yellow]Selection failed:[/yellow] {result['error']}")
+        console.print("  Falling back to staleness-based triggers")
+    else:
+        console.print(
+            f"  Selected: {result['selected']} "
+            f"(re-analyze: {result['re_analyze']}), "
+            f"Skipped: {result['skipped']}"
+        )
+
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  SCRAPING
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def run_scraping(limit: int = 50) -> dict:
+def run_scraping(limit: int = 50, selected_story_ids: list[int] | None = None) -> dict:
     """Scrape missing article bodies via trafilatura.
 
     Runs after ingestion/clustering/scoring, before analysis.
+    If selected_story_ids is provided, only scrape articles belonging to those stories.
     """
     console.rule("[bold blue]Article Body Scraping[/bold blue]")
 
     from ingestion.scraper import scrape_missing_bodies
 
-    result = scrape_missing_bodies(limit=limit)
+    result = scrape_missing_bodies(limit=limit, selected_story_ids=selected_story_ids)
     console.print(
         f"  Scraped: {result['scraped']}, "
         f"Failed: {result['failed']}, "

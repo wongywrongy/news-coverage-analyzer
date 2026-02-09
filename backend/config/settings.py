@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     claude_model: str = "claude-sonnet-4-20250514"
 
+    # ── Editorial selection ────────────────────────────
+    max_stories_per_analysis_cycle: int = 8
+    selection_enabled: bool = True
+
     # ── Logging ───────────────────────────────────────────
     log_level: str = "INFO"
 

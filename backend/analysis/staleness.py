@@ -131,8 +131,14 @@ def analysis_priority(story: dict) -> float:
 def get_stories_needing_analysis(max_results: int = 10) -> list[int]:
     """Return story IDs that need analysis, ordered by priority.
 
-    Uses the new priority formula with significance threshold,
-    category weight, diversity, impact, and staleness.
+    When selection_enabled:
+    - Only considers stories where selected_for_analysis = TRUE
+    - For re_analyze stories (selection_reason starts with "re_analyze"),
+      bypasses the 30% article growth staleness check
+
+    When selection is disabled (or no stories are selected):
+    - Uses the original priority formula with significance threshold,
+      category weight, diversity, impact, and staleness
 
     Excludes:
     - Stories with < 3 articles (not enough for meaningful analysis)
@@ -141,6 +147,29 @@ def get_stories_needing_analysis(max_results: int = 10) -> list[int]:
 
     Returns: list of story_ids, max max_results items
     """
+    # When selection is enabled, use selected stories directly
+    if settings.selection_enabled:
+        from db.queries import get_selected_story_ids
+        selected_ids = get_selected_story_ids()
+        if selected_ids:
+            logger.info(
+                "Selection enabled: %d stories pre-selected for analysis",
+                len(selected_ids),
+            )
+            # Validate selected stories still meet minimum requirements
+            validated = []
+            for story_id in selected_ids:
+                actual = len(get_articles_for_story(story_id))
+                if actual < 3:
+                    logger.debug(
+                        "Skipping selected story #%d: only %d articles",
+                        story_id, actual,
+                    )
+                    continue
+                validated.append(story_id)
+            return validated[:max_results]
+
+    # Fallback: original staleness-based logic
     stories = get_active_stories()
     logger.info("Evaluating %d active stories for analysis needs", len(stories))
 

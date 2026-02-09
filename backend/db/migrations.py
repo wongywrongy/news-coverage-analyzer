@@ -226,6 +226,13 @@ ALTER TABLE stories ADD COLUMN IF NOT EXISTS featured_reason TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_stories_rank ON stories (rank_score DESC) WHERE active = TRUE;
 """
 
+ADD_SELECTION_COLUMNS = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selected_for_analysis BOOLEAN DEFAULT FALSE;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selection_reason TEXT DEFAULT '';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selection_priority INT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS last_selected_at TIMESTAMPTZ;
+"""
+
 CREATE_INSIGHTS_CACHE = """
 CREATE TABLE IF NOT EXISTS insights_cache (
     id              INT PRIMARY KEY DEFAULT 1,
@@ -276,6 +283,7 @@ MIGRATION_STEPS: list[tuple[str, str]] = [
     ("Add category index on stories",   ADD_CATEGORY_INDEX),
     ("Add rank_score to stories",        ADD_RANK_SCORE),
     ("Create insights cache table",      CREATE_INSIGHTS_CACHE),
+    ("Add selection columns to stories", ADD_SELECTION_COLUMNS),
 ]
 
 

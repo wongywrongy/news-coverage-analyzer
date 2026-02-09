@@ -551,6 +551,107 @@ def get_story_centroids() -> list[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  EDITORIAL SELECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def get_selection_candidates() -> list[dict]:
+    """Return active stories with scored metadata + analysis staleness info.
+
+    Single query joining stories + analyses (left join).
+    Returns: id, topic, category, impact_score, coverage_score, article_count,
+    source_count, status, last_article_at, has_analysis, analysis generated_at,
+    article_count_at_gen.
+    """
+    client = get_client()
+    try:
+        result = (
+            client.table("stories")
+            .select(
+                "id, topic, category, impact_score, coverage_score, "
+                "article_count, source_count, status, last_article_at, "
+                "significance_score, "
+                "analyses(generated_at, article_count_at_gen)"
+            )
+            .eq("active", True)
+            .order("impact_score", desc=True)
+            .execute()
+        )
+        rows = result.data or []
+        # Flatten the joined analyses data
+        candidates = []
+        for row in rows:
+            analyses = row.pop("analyses", None)
+            if isinstance(analyses, list) and analyses:
+                analysis = analyses[0]
+                row["has_analysis"] = True
+                row["analysis_generated_at"] = analysis.get("generated_at")
+                row["article_count_at_gen"] = analysis.get("article_count_at_gen", 0)
+            elif isinstance(analyses, dict) and analyses:
+                row["has_analysis"] = True
+                row["analysis_generated_at"] = analyses.get("generated_at")
+                row["article_count_at_gen"] = analyses.get("article_count_at_gen", 0)
+            else:
+                row["has_analysis"] = False
+                row["analysis_generated_at"] = None
+                row["article_count_at_gen"] = 0
+            candidates.append(row)
+        return candidates
+    except Exception as exc:
+        logger.error("get_selection_candidates failed: %s", exc)
+        return []
+
+
+def mark_stories_selected(selections: list[dict]) -> None:
+    """Batch update: set selected_for_analysis, selection_reason,
+    selection_priority, last_selected_at on each story.
+
+    Each dict must have: story_id, reason, priority
+    """
+    client = get_client()
+    now = datetime.now(timezone.utc).isoformat()
+    for sel in selections:
+        try:
+            client.table("stories").update({
+                "selected_for_analysis": True,
+                "selection_reason": sel.get("reason", ""),
+                "selection_priority": sel.get("priority"),
+                "last_selected_at": now,
+            }).eq("id", sel["story_id"]).execute()
+        except Exception as exc:
+            logger.error("mark_stories_selected(%d) failed: %s", sel["story_id"], exc)
+
+
+def clear_selection_flags() -> None:
+    """Reset all selected_for_analysis = FALSE at start of each cycle."""
+    client = get_client()
+    try:
+        client.table("stories").update({
+            "selected_for_analysis": False,
+            "selection_reason": "",
+            "selection_priority": None,
+        }).eq("selected_for_analysis", True).execute()
+    except Exception as exc:
+        logger.error("clear_selection_flags failed: %s", exc)
+
+
+def get_selected_story_ids() -> list[int]:
+    """Return IDs where selected_for_analysis = TRUE."""
+    client = get_client()
+    try:
+        result = (
+            client.table("stories")
+            .select("id")
+            .eq("selected_for_analysis", True)
+            .execute()
+        )
+        return [row["id"] for row in (result.data or [])]
+    except Exception as exc:
+        logger.error("get_selected_story_ids failed: %s", exc)
+        return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  INSIGHTS CACHE
 # ═══════════════════════════════════════════════════════════════════════════════
 

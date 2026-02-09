@@ -29,7 +29,7 @@ from rich.text import Text
 
 from config.settings import settings
 from pipeline.ingest import run_ingestion
-from pipeline.process import run_analysis, run_clustering, run_scoring, run_scraping
+from pipeline.process import run_analysis, run_clustering, run_scoring, run_scraping, run_selection
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -47,6 +47,7 @@ STAGES = {
     "ingest":  "Fetch, normalize, deduplicate, embed, store",
     "cluster": "Assign articles to stories, discover clusters",
     "score":   "Impact scoring, attention, gap detection",
+    "select":  "GPT-4o-mini editorial selection for analysis",
     "scrape":  "Extract article bodies via trafilatura",
     "analyze": "Generate Claude-powered neutral analyses",
 }
@@ -118,11 +119,20 @@ def stage_score() -> None:
     _print_done(time.time() - t0)
 
 
-def stage_scrape() -> None:
+def stage_select() -> dict:
+    """Run the editorial selection stage."""
+    _print_stage_header("Select", STAGES["select"])
+    t0 = time.time()
+    result = run_selection()
+    _print_done(time.time() - t0)
+    return result
+
+
+def stage_scrape(selected_story_ids: list[int] | None = None) -> None:
     """Run the scrape stage."""
     _print_stage_header("Scrape", STAGES["scrape"])
     t0 = time.time()
-    run_scraping(limit=50)
+    run_scraping(limit=50, selected_story_ids=selected_story_ids)
     _print_done(time.time() - t0)
 
 
@@ -138,6 +148,7 @@ STAGE_RUNNERS = {
     "ingest":  stage_ingest,
     "cluster": stage_cluster,
     "score":   stage_score,
+    "select":  stage_select,
     "scrape":  stage_scrape,
     "analyze": stage_analyze,
 }
@@ -147,7 +158,7 @@ STAGE_RUNNERS = {
 
 
 def run_full(dry_run: bool = False) -> None:
-    """Execute the full pipeline: ingest → cluster → score → scrape → analyze."""
+    """Execute the full pipeline: ingest → cluster → score → select → scrape → analyze."""
     _print_banner("Full pipeline")
     t0 = time.time()
 
@@ -158,7 +169,20 @@ def run_full(dry_run: bool = False) -> None:
         stage_score()
 
     if not dry_run:
-        stage_scrape()
+        selection_result = stage_select()
+
+        # Pass selected story IDs to scraper when selection succeeded
+        selected_ids = None
+        if (
+            settings.selection_enabled
+            and not selection_result.get("error")
+            and not selection_result.get("disabled")
+            and selection_result.get("selected", 0) > 0
+        ):
+            from db.queries import get_selected_story_ids
+            selected_ids = get_selected_story_ids()
+
+        stage_scrape(selected_story_ids=selected_ids)
 
     if not dry_run:
         stage_analyze()
@@ -253,12 +277,14 @@ def main() -> None:
             "  ingest    Fetch, normalize, deduplicate, embed, store\n"
             "  cluster   Assign articles to stories, discover clusters\n"
             "  score     Impact scoring, attention, gap detection\n"
+            "  select    GPT-4o-mini editorial selection for analysis\n"
             "  scrape    Extract article bodies via trafilatura\n"
             "  analyze   Generate Claude-powered neutral analyses\n"
             "\n"
             "examples:\n"
             "  python -m pipeline.main                  Full pipeline\n"
             "  python -m pipeline.main ingest           Ingest only\n"
+            "  python -m pipeline.main select           Select only\n"
             "  python -m pipeline.main analyze          Analyze only\n"
             "  python -m pipeline.main --daemon         Daemon mode\n"
             "  python -m pipeline.main ingest --dry-run Dry-run ingest"

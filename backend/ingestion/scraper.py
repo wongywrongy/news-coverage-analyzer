@@ -63,8 +63,16 @@ def _should_skip(url: str) -> bool:
     return False
 
 
-def scrape_missing_bodies(limit: int = 50) -> dict:
+def scrape_missing_bodies(
+    limit: int = 50,
+    selected_story_ids: list[int] | None = None,
+) -> dict:
     """Fetch bodies for articles where body is empty.
+
+    Args:
+        limit: Max articles to scrape.
+        selected_story_ids: If provided, only scrape articles belonging to
+            these stories.  If None, scrape all articles with empty bodies.
 
     Returns {"scraped": int, "failed": int, "skipped": int}
     """
@@ -72,14 +80,16 @@ def scrape_missing_bodies(limit: int = 50) -> dict:
     stats = {"scraped": 0, "failed": 0, "skipped": 0}
 
     # Query articles with empty or null body
-    resp = (
+    query = (
         client.table("articles")
         .select("id, url")
         .or_("body.is.null,body.eq.")
         .order("created_at", desc=True)
         .limit(limit)
-        .execute()
     )
+    if selected_story_ids is not None and selected_story_ids:
+        query = query.in_("story_id", selected_story_ids)
+    resp = query.execute()
     articles = resp.data or []
 
     if not articles:
