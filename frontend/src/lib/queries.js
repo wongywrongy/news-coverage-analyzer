@@ -120,6 +120,12 @@ export async function getStory(id) {
     console.error('Analysis fetch exception:', e);
   }
 
+  // Determine if analysis is current (matches latest prompt version)
+  const CURRENT_ANALYSIS_VERSION = 2;
+  if (analysis) {
+    analysis.analysis_is_current = (analysis.analysis_version || 1) >= CURRENT_ANALYSIS_VERSION;
+  }
+
   // Parse JSONB fields if they come back as strings
   if (analysis) {
     if (typeof analysis.contrasts === 'string') {
@@ -137,6 +143,11 @@ export async function getStory(id) {
       catch { analysis.source_framings = []; }
     }
     if (!Array.isArray(analysis.source_framings)) analysis.source_framings = [];
+    if (typeof analysis.body === 'string') {
+      try { analysis.body = JSON.parse(analysis.body); }
+      catch { analysis.body = []; }
+    }
+    if (analysis.body && !Array.isArray(analysis.body)) analysis.body = [];
   }
 
   // Fetch article source list + bias distribution
@@ -320,65 +331,75 @@ export async function getHeadlineStories() {
     // 30-day rolling window
     const since = new Date();
     since.setDate(since.getDate() - 30);
-    const sinceISO = since.toISOString();
-
-    const { data: stories, error: sErr } = await supabase
-      .from('stories')
-      .select('id, topic, category, impact_score, article_count, source_count, trend, bias_spread, rank_score, first_seen, created_at')
-      .eq('active', true)
-      .gte('impact_score', 75)
-      .gte('article_count', 15)
-      .order('rank_score', { ascending: false })
-      .limit(20);
-
-    if (sErr || !stories || stories.length === 0) return [];
-
-    // Filter to 30-day window
     const sinceMs = since.getTime();
-    const recent = stories.filter(s => {
-      const ts = s.first_seen || s.created_at;
-      return ts && new Date(ts).getTime() >= sinceMs;
-    });
 
-    if (recent.length === 0) return [];
+    // Try strict thresholds first, then relax if too few results
+    const thresholds = [
+      { impact: 75, articles: 15 },
+      { impact: 50, articles: 8 },
+      { impact: 30, articles: 5 },
+    ];
 
-    // Fetch analyses for these stories
-    const ids = recent.map(s => s.id);
-    const { data: analyses, error: aErr } = await supabase
-      .from('analyses')
-      .select('story_id, headline, lede')
-      .in('story_id', ids)
-      .not('headline', 'is', null);
-
-    if (aErr || !analyses || analyses.length === 0) return [];
-
-    // Map story_id → latest analysis
-    const analysisMap = {};
-    for (const a of analyses) {
-      analysisMap[a.story_id] = a;
+    for (const { impact, articles } of thresholds) {
+      const result = await _fetchHeadlineCandidates(impact, articles, sinceMs);
+      if (result.length >= 2) return result.slice(0, 3);
     }
 
-    // Only keep stories that have an analysis
-    const withAnalysis = recent
-      .filter(s => analysisMap[s.id])
-      .map(s => ({
-        id: s.id,
-        topic: s.topic,
-        category: s.category,
-        impact_score: s.impact_score,
-        article_count: s.article_count,
-        source_count: s.source_count,
-        trend: s.trend,
-        bias_spread: s.bias_spread,
-        headline: analysisMap[s.id].headline,
-        lede: analysisMap[s.id].lede,
-      }));
-
-    return withAnalysis.slice(0, 4);
+    return [];
   } catch (e) {
     console.error('getHeadlineStories exception:', e);
     return [];
   }
+}
+
+async function _fetchHeadlineCandidates(minImpact, minArticles, sinceMs) {
+  const { data: stories, error: sErr } = await supabase
+    .from('stories')
+    .select('id, topic, category, impact_score, article_count, source_count, trend, bias_spread, rank_score, first_seen, created_at')
+    .eq('active', true)
+    .gte('impact_score', minImpact)
+    .gte('article_count', minArticles)
+    .order('rank_score', { ascending: false })
+    .limit(20);
+
+  if (sErr || !stories || stories.length === 0) return [];
+
+  const recent = stories.filter(s => {
+    const ts = s.first_seen || s.created_at;
+    return ts && new Date(ts).getTime() >= sinceMs;
+  });
+
+  if (recent.length === 0) return [];
+
+  // Fetch analyses for these stories
+  const ids = recent.map(s => s.id);
+  const { data: analyses, error: aErr } = await supabase
+    .from('analyses')
+    .select('story_id, headline, lede')
+    .in('story_id', ids)
+    .not('headline', 'is', null);
+
+  if (aErr || !analyses || analyses.length === 0) return [];
+
+  const analysisMap = {};
+  for (const a of analyses) {
+    analysisMap[a.story_id] = a;
+  }
+
+  return recent
+    .filter(s => analysisMap[s.id])
+    .map(s => ({
+      id: s.id,
+      topic: s.topic,
+      category: s.category,
+      impact_score: s.impact_score,
+      article_count: s.article_count,
+      source_count: s.source_count,
+      trend: s.trend,
+      bias_spread: s.bias_spread,
+      headline: analysisMap[s.id].headline,
+      lede: analysisMap[s.id].lede,
+    }));
 }
 
 const TOPICS_PER_CATEGORY = 8;

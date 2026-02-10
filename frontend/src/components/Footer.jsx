@@ -13,7 +13,7 @@ export default function Footer() {
         &copy; 2025 ClearSignal &mdash; Tracking media coverage across the political spectrum.
       </p>
       <p style={{ fontSize: 13 }}>
-        <a href="/methodology" style={{ color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: 500 }}>Methodology</a>
+        <a href="/how-it-works" style={{ color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: 500 }}>How It Works</a>
         {' \u00B7 '}
         <a href="#about" style={{ color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: 500 }}>About</a>
         {' \u00B7 '}

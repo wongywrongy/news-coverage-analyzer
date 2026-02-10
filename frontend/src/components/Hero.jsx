@@ -10,7 +10,7 @@ export default function Hero({ stats }) {
     <section className="hero-section" style={{
       padding: 'var(--space-xl) 48px var(--space-lg)',
       textAlign: 'center',
-      borderBottom: '1px solid var(--border)',
+      borderBottom: 'none',
     }}>
       <div style={{
         maxWidth: 680,

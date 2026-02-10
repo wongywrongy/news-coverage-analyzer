@@ -137,13 +137,16 @@ button {
   .nav-stat-label { display: none !important; }
 }
 
-/* ── Headlines responsive ── */
+/* ── TopStories responsive ── */
 
 @media (max-width: 768px) {
-  .headlines-section { padding: var(--space-md) 20px !important; }
-  .headlines-grid {
+  .ts { padding: 0 20px var(--space-md) !important; }
+  .ts-grid {
     grid-template-columns: 1fr !important;
-    gap: 16px !important;
+  }
+  .ts-side {
+    border-left: none !important;
+    border-top: 1px solid var(--border);
   }
 }
 
@@ -245,17 +248,30 @@ button {
   }
 }
 
-/* ── InsightsBar responsive ── */
+/* ── TopStories badge styles ── */
 
-@media (max-width: 768px) {
-  .insights-inner {
-    flex-direction: column !important;
-    padding: 0 20px !important;
-    gap: 8px !important;
-  }
-  .insights-sep {
-    display: none !important;
-  }
+.ts-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.ts-badge-divergent {
+  color: var(--accent-red);
+  background: rgba(192,57,43,0.1);
+}
+
+.ts-badge-trending {
+  color: var(--accent-gold);
+  background: rgba(200,150,62,0.12);
+}
+
+.ts-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 /* ── CategoryTabs responsive ── */
@@ -276,20 +292,18 @@ button {
   }
 }
 
-/* ── TopicCard responsive ── */
+/* ── TopicList responsive ── */
 
 @media (max-width: 768px) {
-  .topic-card {
-    grid-template-columns: 1fr !important;
-    padding: 16px 20px !important;
+  .topic-list { padding: 0 20px 60px !important; }
+  .topic-row {
+    flex-wrap: wrap;
+    gap: 12px !important;
+    padding: 14px 0 14px 12px !important;
   }
-  .topic-title { font-size: 16px !important; }
-}
-
-/* ── Homepage main responsive ── */
-
-@media (max-width: 768px) {
-  .homepage-main { padding: 0 20px 60px !important; }
+  .topic-row-title { font-size: 15px !important; }
+  .topic-row-date { min-width: 56px !important; font-size: 10px !important; }
+  .topic-row-scores { gap: 12px !important; }
 }
 
 /* ── Archive responsive ── */
@@ -310,24 +324,143 @@ button {
   .archive-row-meta { display: none !important; }
 }
 
+/* ── HowItWorks ── */
+
+/* Flow columns: horizontal row with vertical dividers between them */
+.hiw-flow-h {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.hiw-flow-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 var(--space-md);
+  position: relative;
+}
+
+/* Vertical divider between columns (desktop only) */
+.hiw-flow-col:not(.hiw-flow-col-last)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background: var(--border);
+}
+
+/* Split layout for Phase 3 */
+.hiw-flow-split {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.hiw-split-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.hiw-split-merge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--border);
+  padding-top: 20px;
+}
+
+.hiw-split-right {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Connectors: hidden on desktop, shown on mobile */
+.hiw-connector {
+  display: none;
+}
+
+/* Arrows: visible on desktop, hidden on mobile */
+.hiw-arrow {
+  /* default: visible */
+}
+
 /* ── HowItWorks responsive ── */
 
 @media (max-width: 768px) {
-  .hiw-nav { padding: 12px 20px !important; }
-  .hiw-flow {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+  .hiw-nav { padding: 14px 20px !important; }
+  .hiw-hero { padding: var(--space-lg) 20px !important; }
+  .hiw-hero-title { font-size: 32px !important; }
+  .hiw-principles { grid-template-columns: 1fr !important; padding: var(--space-lg) 20px !important; }
+  .hiw-phase, .hiw-phase-warm { padding: 40px 20px !important; }
+  .hiw-flow-diagram { padding: var(--space-md) !important; }
+
+  /* Hide all arrow characters on mobile */
+  .hiw-arrow { display: none !important; }
+
+  /* Show connectors as 2px vertical lines on mobile */
+  .hiw-connector {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 24px;
   }
-  .hiw-flow-arrow {
+  .hiw-connector::after {
+    content: '';
+    width: 2px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 1px;
+  }
+
+  /* Pipeline strip: vertical list */
+  .hiw-pipeline {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    padding: var(--space-sm) !important;
+  }
+  .hiw-pipe-node {
+    width: 100% !important;
+    white-space: normal !important;
+  }
+
+  /* Flow columns: stack vertically */
+  .hiw-flow-h {
+    flex-direction: column !important;
+  }
+  .hiw-flow-col {
+    padding: 0 !important;
+  }
+  /* Remove the vertical dividers on mobile */
+  .hiw-flow-col:not(.hiw-flow-col-last)::after {
     display: none !important;
   }
-  .hiw-hero-title { font-size: 36px !important; }
-  .hiw-embed-flow { flex-direction: column !important; align-items: stretch !important; }
-  .hiw-scrape-flow { grid-template-columns: 1fr !important; }
+
+  /* Phase 3 split: single column stack */
+  .hiw-flow-split {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .hiw-split-merge {
+    display: none !important;
+  }
+  .hiw-split-left {
+    gap: 0;
+  }
+  .hiw-split-right {
+    gap: 0;
+  }
 }
 
 @media (max-width: 640px) {
   .hiw-nav { padding: 12px 16px !important; }
-  .hiw-hero-title { font-size: 30px !important; }
-  .hiw-cluster-viz { grid-template-columns: 1fr !important; }
+  .hiw-hero-title { font-size: 28px !important; }
 }

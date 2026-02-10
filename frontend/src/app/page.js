@@ -1,9 +1,9 @@
-import { getStories, getDashboardStats, getInsights, getCategorySummary, getHeadlineStories } from '../lib/queries';
+import { getStories, getDashboardStats, getCategorySummary, getHeadlineStories } from '../lib/queries';
 import Header from '../components/Header';
-import Headlines from '../components/Headlines';
 import Hero from '../components/Hero';
 import CoverageSection from '../components/CoverageSection';
-import CoverageMonitor from '../components/CoverageMonitor';
+import TopStories from '../components/TopStories';
+import TopicList from '../components/TopicList';
 import Footer from '../components/Footer';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,6 @@ export default async function HomePage() {
   const defaults = [
     [],
     { analyzedCount: 0, articleCount: 0, totalTracked: 0 },
-    [],
     { categories: [] },
     [],
   ];
@@ -20,22 +19,23 @@ export default async function HomePage() {
   const results = await Promise.allSettled([
     getStories(),
     getDashboardStats(),
-    getInsights(),
     getCategorySummary(),
     getHeadlineStories(),
   ]);
 
-  const [stories, stats, insights, categorySummary, headlineStories] = results.map((r, i) =>
+  const [stories, stats, categorySummary, headlineStories] = results.map((r, i) =>
     r.status === 'fulfilled' ? r.value : defaults[i],
   );
+
+  const excludeIds = new Set(headlineStories.map(s => s.id));
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Header stats={stats} />
-      <Headlines stories={headlineStories} />
       <Hero stats={stats} />
       <CoverageSection categorySummary={categorySummary} />
-      <CoverageMonitor stories={stories} insights={insights} />
+      <TopStories stories={headlineStories} />
+      <TopicList stories={stories} excludeIds={excludeIds} />
       <Footer />
     </div>
   );

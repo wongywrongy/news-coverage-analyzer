@@ -197,7 +197,10 @@ export default function StoryDetail({ story, analysis, sourceList = [], biasCoun
     });
   }
 
-  // Context paragraphs
+  // New format: body array; Old format: separate fields
+  const hasBodyArray = a?.body && Array.isArray(a.body) && a.body.length > 0;
+
+  // Legacy: context paragraphs (old format fallback)
   const contextParagraphs = a?.context
     ? a.context.split(/\n\n+/).filter(p => p.trim())
     : [];
@@ -289,6 +292,29 @@ export default function StoryDetail({ story, analysis, sourceList = [], biasCoun
           margin: '0 auto',
           padding: 'var(--space-xl) var(--space-md) 0',
         }}>
+
+          {/* ── Stale analysis notice ── */}
+          {a.analysis_is_current === false && (
+            <div style={{
+              background: '#F4F1EB',
+              border: '1px solid #E8E4DC',
+              borderRadius: 8,
+              padding: '10px 16px',
+              textAlign: 'center',
+              marginBottom: 'var(--space-md)',
+            }}>
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 13,
+                color: '#8C8577',
+              }}>
+                This analysis is being refreshed
+                {a.generated_at && (
+                  <> &middot; Last updated {new Date(a.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                )}
+              </span>
+            </div>
+          )}
 
           {/* ── Article Header ── */}
           <FadeIn delay={0}>
@@ -573,133 +599,195 @@ export default function StoryDetail({ story, analysis, sourceList = [], biasCoun
             </div>
           </FadeIn>
 
-          {/* ── Consensus: What sources agree on ── */}
-          {a.facts?.length > 0 && (
+          {/* ── Article Body ── */}
+          {hasBodyArray ? (
+            /* ── New format: editorial body with inline framing ── */
             <FadeIn delay={150}>
-              <SectionHeading
-                label="Consensus"
-                title="What is known"
-              />
-              <div style={{ marginBottom: 'var(--space-section)' }}>
-                {a.facts.map((f, i) => {
-                  const text = typeof f === 'string' ? f : f.claim;
-                  return (
-                    <div key={i} style={{
-                      display: 'flex',
-                      gap: 14,
-                      alignItems: 'flex-start',
-                      padding: '14px 0',
-                      borderBottom: i < a.facts.length - 1 ? '1px solid #f0eeea' : 'none',
-                    }}>
-                      {/* Green checkmark circle */}
-                      <div style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        background: 'var(--accent-green)',
-                        flexShrink: 0,
-                        marginTop: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <span style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: 15,
-                        color: 'var(--ink)',
-                        lineHeight: 1.6,
-                      }}>
-                        {text}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ height: 1, background: 'var(--border)', margin: `var(--space-section) 0` }} />
-            </FadeIn>
-          )}
-
-          {/* ── Context: Background ── */}
-          {contextParagraphs.length > 0 && (
-            <FadeIn delay={200}>
-              <SectionHeading
-                label="Background"
-                title="Context"
-              />
-              <div style={{ marginBottom: 'var(--space-section)' }}>
-                {contextParagraphs.map((p, i) => (
-                  <p key={i} className="sd-context-p" style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 16,
-                    color: 'var(--ink-secondary)',
-                    lineHeight: 1.8,
-                    marginBottom: 'var(--space-sm)',
-                  }}>
-                    {p}
-                  </p>
-                ))}
-              </div>
-              <div style={{ height: 1, background: 'var(--border)', margin: `var(--space-section) 0` }} />
-            </FadeIn>
-          )}
-
-          {/* ── Framing Analysis: Where sources diverge ── */}
-          <FadeIn delay={250}>
-            <SectionHeading
-              label="Framing Analysis"
-              title="Where sources diverge"
-              subtitle="How different outlets frame the same facts"
-            />
-            {a.contrasts?.length > 0 ? (
-              <div style={{ marginBottom: 'var(--space-section)' }}>
-                {a.contrasts.map((c, i) => (
-                  <ContrastCard key={i} contrast={c} />
-                ))}
-              </div>
-            ) : (
               <div style={{
-                padding: 'var(--space-md)',
-                background: 'var(--warm-bg)',
-                borderRadius: 'var(--radius-sm)',
+                borderTop: '1px solid var(--border)',
+                paddingTop: 'var(--space-lg)',
                 marginBottom: 'var(--space-section)',
               }}>
-                <p style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 15,
-                  color: 'var(--ink-secondary)',
-                  lineHeight: 1.6,
-                }}>
-                  All sources framed this topic similarly. No significant differences in angle or emphasis were identified.
-                </p>
-              </div>
-            )}
-            <div style={{ height: 1, background: 'var(--border)', margin: `var(--space-section) 0` }} />
-          </FadeIn>
+                {a.body.map((block, index) => {
+                  if (block.type === 'text') {
+                    const isLastText = !a.body.slice(index + 1).some(b => b.type === 'text');
+                    return (
+                      <div key={index} style={isLastText ? {
+                        marginTop: 'var(--space-lg)',
+                        paddingTop: 'var(--space-lg)',
+                        borderTop: '1px solid var(--border)',
+                      } : undefined}>
+                        <p style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 17,
+                          lineHeight: 1.85,
+                          color: '#1A1A1A',
+                          marginBottom: 'var(--space-md)',
+                          fontWeight: isLastText ? 500 : 400,
+                        }}>
+                          {block.content}
+                        </p>
+                      </div>
+                    );
+                  }
 
-          {/* ── Bottom Line ── */}
-          {a.bottom_line && (
-            <FadeIn delay={300}>
-              <SectionHeading
-                label="Summary"
-                title="Bottom line"
-                subtitle="What is known, what is uncertain, what to watch"
-              />
-              <div style={{ marginBottom: 'var(--space-section)' }}>
-                <p className="sd-context-p" style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 16,
-                  color: 'var(--ink-secondary)',
-                  lineHeight: 1.8,
-                }}>
-                  {a.bottom_line}
-                </p>
+                  if (block.type === 'framing') {
+                    return (
+                      <div key={index} style={{
+                        margin: 'var(--space-lg) 0',
+                        padding: 'var(--space-md)',
+                        background: '#FFFFFF',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-sm)',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: 'var(--space-sm)',
+                      }}>
+                        {/* Side A — blue accent */}
+                        <div style={{
+                          padding: 'var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md)',
+                          borderLeft: '3px solid #2B4C7E',
+                          borderRadius: 2,
+                        }}>
+                          <div style={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: 11,
+                            color: 'var(--ink-muted)',
+                            marginBottom: 6,
+                          }}>
+                            {block.sourceA} &middot; {block.framingA}
+                          </div>
+                          <div style={{
+                            fontSize: 15,
+                            lineHeight: 1.55,
+                            color: '#1A1A1A',
+                            fontStyle: 'italic',
+                          }}>
+                            {block.claimA}
+                          </div>
+                        </div>
+                        {/* Side B — gold accent */}
+                        <div style={{
+                          padding: 'var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md)',
+                          borderLeft: '3px solid #C8963E',
+                          borderRadius: 2,
+                        }}>
+                          <div style={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: 11,
+                            color: 'var(--ink-muted)',
+                            marginBottom: 6,
+                          }}>
+                            {block.sourceB} &middot; {block.framingB}
+                          </div>
+                          <div style={{
+                            fontSize: 15,
+                            lineHeight: 1.55,
+                            color: '#1A1A1A',
+                            fontStyle: 'italic',
+                          }}>
+                            {block.claimB}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
               </div>
-              <div style={{ height: 1, background: 'var(--border)', margin: `var(--space-section) 0` }} />
             </FadeIn>
+          ) : (
+            /* ── Legacy format: separate sections ── */
+            <>
+              {/* Consensus */}
+              {a.facts?.length > 0 && (
+                <FadeIn delay={150}>
+                  <SectionHeading label="Consensus" title="What is known" />
+                  <div style={{ marginBottom: 'var(--space-section)' }}>
+                    {a.facts.map((f, i) => {
+                      const text = typeof f === 'string' ? f : f.claim;
+                      return (
+                        <div key={i} style={{
+                          display: 'flex', gap: 14, alignItems: 'flex-start',
+                          padding: '14px 0',
+                          borderBottom: i < a.facts.length - 1 ? '1px solid #f0eeea' : 'none',
+                        }}>
+                          <div style={{
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: 'var(--accent-green)', flexShrink: 0, marginTop: 2,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                          <span style={{
+                            fontFamily: "'DM Sans', sans-serif", fontSize: 15,
+                            color: 'var(--ink)', lineHeight: 1.6,
+                          }}>{text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-section) 0' }} />
+                </FadeIn>
+              )}
+
+              {/* Context */}
+              {contextParagraphs.length > 0 && (
+                <FadeIn delay={200}>
+                  <SectionHeading label="Background" title="Context" />
+                  <div style={{ marginBottom: 'var(--space-section)' }}>
+                    {contextParagraphs.map((p, i) => (
+                      <p key={i} style={{
+                        fontFamily: "'DM Sans', sans-serif", fontSize: 16,
+                        color: 'var(--ink-secondary)', lineHeight: 1.8,
+                        marginBottom: 'var(--space-sm)',
+                      }}>{p}</p>
+                    ))}
+                  </div>
+                  <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-section) 0' }} />
+                </FadeIn>
+              )}
+
+              {/* Contrasts */}
+              <FadeIn delay={250}>
+                <SectionHeading label="Framing Analysis" title="Where sources diverge" subtitle="How different outlets frame the same facts" />
+                {a.contrasts?.length > 0 ? (
+                  <div style={{ marginBottom: 'var(--space-section)' }}>
+                    {a.contrasts.map((c, i) => <ContrastCard key={i} contrast={c} />)}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: 'var(--space-md)', background: 'var(--warm-bg)',
+                    borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-section)',
+                  }}>
+                    <p style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 15,
+                      color: 'var(--ink-secondary)', lineHeight: 1.6,
+                    }}>
+                      All sources framed this topic similarly. No significant differences in angle or emphasis were identified.
+                    </p>
+                  </div>
+                )}
+                <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-section) 0' }} />
+              </FadeIn>
+
+              {/* Bottom Line */}
+              {a.bottom_line && (
+                <FadeIn delay={300}>
+                  <SectionHeading label="Summary" title="Bottom line" subtitle="What is known, what is uncertain, what to watch" />
+                  <div style={{ marginBottom: 'var(--space-section)' }}>
+                    <p style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 16,
+                      color: 'var(--ink-secondary)', lineHeight: 1.8,
+                    }}>{a.bottom_line}</p>
+                  </div>
+                  <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-section) 0' }} />
+                </FadeIn>
+              )}
+            </>
           )}
 
           {/* ── Source Breakdown ── */}
