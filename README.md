@@ -19,65 +19,34 @@ npm run lint         # ESLint check
 ```bash
 cd backend
 python -m venv .venv
-.venv/Scripts/activate        # Windows
+.venv/Scripts/activate        # Windows ssss
 pip install -r requirements.txt
-```
 
-#### Pipeline
-
-```bash
-# Full pipeline — runs all 6 stages in order
+# Full pipeline (ingest → cluster → score → scrape → analyze)
 python -m pipeline.main
 
-# Individual stages
-python -m pipeline.main ingest    # Fetch RSS feeds, normalize, deduplicate, embed (OpenAI), store
-python -m pipeline.main cluster   # Assign → discover (HDBSCAN) → split → label → rename → merge
-python -m pipeline.main score     # Impact → coverage → attention → sentiment → timeline → gaps → ranking → insights
-python -m pipeline.main select    # GPT-4o-mini picks which stories deserve Claude analysis (cost gate)
-python -m pipeline.main scrape    # Extract article bodies via trafilatura (skips paywalled sites)
-python -m pipeline.main analyze   # Framing classification + Claude AP-style analyses for selected stories
+# Run individual stages
+python -m pipeline.main ingest           # fetch + normalize + embed + store
+python -m pipeline.main cluster          # assign articles → stories
+python -m pipeline.main score            # impact + attention + gaps
+python -m pipeline.main scrape           # extract article bodies
+python -m pipeline.main analyze          # generate Claude analyses
 
-# Daemon mode — full pipeline on a recurring schedule
-python -m pipeline.main --daemon                 # every 15 min (default)
-python -m pipeline.main --daemon --interval 30   # every 30 min
+# Daemon mode (full pipeline on schedule, default 15min)
+python -m pipeline.main --daemon
+python -m pipeline.main --daemon --interval 30
 
-# Dry run — runs pipeline without writing to the database
+# Dry run (no DB writes)
 python -m pipeline.main --dry-run
 python -m pipeline.main ingest --dry-run
-```
 
-#### One-off Scripts
-
-```bash
-# Backfill Claude analyses for stories that don't have one (--force to regenerate)
+# One-off scripts
 python -m scripts.backfill_analyses
-python -m scripts.backfill_analyses --limit 20 --force
-
-# Backfill article bodies for articles missing full text
-python -m scripts.scrape_backfill
-python -m scripts.scrape_backfill --limit 100
-
-# Populate time metadata (first_seen, status, coverage_velocity) from article timestamps
+python -m scripts.scrape_backfilla
 python -m scripts.backfill_time_metadata
-
-# Backfill coverage_score using article count, source diversity, recency, velocity
-python -m scripts.backfill_coverage
-
-# Backfill story_daily_counts table from existing article publish dates
-python -m scripts.backfill_daily_counts
-
-# Categorize stories — keyword matching first, then Claude for the rest
-python -m scripts.backfill_categories
-python -m scripts.backfill_categories --keywords-only   # skip AI
-python -m scripts.backfill_categories --ai-only         # skip keyword pass
-
-# Score significance + validate cluster coherence + rename vague topics (GPT-4o-mini)
 python -m scripts.filter_topics
-python -m scripts.filter_topics --dry-run
-
-# Fix truncated/vague headlines using Claude Haiku (dry run by default)
-python -m scripts.migrate_headlines
-python -m scripts.migrate_headlines --apply   # actually write fixes
+python -m scripts.migrate_headlines              # dry run (preview headline fixes)
+python -m scripts.migrate_headlines --apply      # apply headline fixes
 ```
 
 ### Environment Variables
@@ -103,7 +72,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 **Frontend:** Next.js 14, React 18, Supabase JS client
 **Backend:** Python 3, async pipeline, Anthropic Claude, OpenAI embeddings
 **Database:** Supabase (PostgreSQL + pgvector)
-**Styling:** Inline styles, Playfair Display + DM Sans + JetBrains Mono fonts
+**Styling:** Inline styles, Source Serif 4 + JetBrains Mono fonts
 
 ## File Map
 
@@ -111,27 +80,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
-| `app/page.js` | Homepage — fetches stories, stats, insights, categories via Promise.allSettled |
+| `app/page.js` | Homepage — fetches stories + stats, renders Header/Hero/CoverageMonitor |
 | `app/story/[id]/page.js` | Story detail page — fetches story + analysis by ID |
-| `app/archive/page.js` | Archive page — all analyzed topics with filtering and search |
-| `app/methodology/page.js` | Methodology page — how ClearSignal works |
-| `app/error.js` | Global error boundary with retry button |
 | `app/layout.js` | Root layout with font imports and metadata |
-| `app/globals.css` | Global resets, keyframe animations, responsive breakpoints |
-| `lib/constants.js` | Category groups, scoring helpers, color mappings |
-| `lib/queries.js` | Supabase query functions — all wrapped in try/catch with safe defaults |
+| `app/globals.css` | Global resets, keyframe animations, dark theme base |
+| `lib/constants.js` | Category groups, scoring helpers, activity day computation |
+| `lib/queries.js` | Supabase query functions for stories, analyses, stats |
 | `lib/supabase.js` | Supabase client singleton |
-| `components/Header.jsx` | Sticky nav with live tracking stats |
-| `components/Hero.jsx` | Hero section with tagline, category chart, stats band |
-| `components/CategoryTabs.jsx` | Sticky category filter tabs with scroll shadow |
-| `components/InsightsBar.jsx` | AI-generated insights ticker |
-| `components/CoverageMonitor.jsx` | Main topic list — flat ranked display with load-more |
-| `components/TopicCard.jsx` | Compact topic card with scores, trend, and status |
-| `components/Archive.jsx` | Archive — filterable, sortable, searchable topic listing |
-| `components/StoryDetail.jsx` | Full story analysis — scores, context, contrasts, facts, bottom line |
+| `components/Header.jsx` | Site header with tracking count |
+| `components/Hero.jsx` | Hero section with tagline, stat mosaic, stats band |
+| `components/CategoryNav.jsx` | 4-group category navigation with activity indicators |
+| `components/CoverageMonitor.jsx` | Main story list with category grouping and coverage filters |
+| `components/CategorySection.jsx` | Collapsible story grid section per category group |
+| `components/CoverageCard.jsx` | Story card with timeline, coverage label, scores |
+| `components/CoverageTimeline.jsx` | 14-day continuous bar timeline with hover tooltips |
+| `components/StoryDetail.jsx` | Full story analysis view — scores, contrasts, facts, bottom line |
 | `components/ContrastCard.jsx` | Side-by-side framing comparison (left vs right source) |
-| `components/HowItWorks.jsx` | Methodology page content — pipeline explainer |
-| `components/Footer.jsx` | Site footer |
+| `components/FactCheck.jsx` | Claim verdict display with evidence |
 
 ### Backend (`backend/`)
 
@@ -139,10 +104,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
-| `pipeline/main.py` | CLI entry point — single run, daemon mode, dry-run |
+| `pipeline/main.py` | CLI entry point — single run, continuous mode, dry-run |
 | `pipeline/ingest.py` | Orchestrates fetch, normalize, deduplicate, embed, store |
 | `pipeline/process.py` | Orchestrates clustering, scoring, analysis sequencing |
-| `pipeline/select.py` | GPT-4o-mini editorial selection — picks stories for Claude analysis |
+| `pipeline/poc_analysis.py` | PoC analysis for 10 hand-picked stories |
+| `pipeline/cleanup.py` | One-time fix for stale scores and bad labels |
 
 **Ingestion**
 
@@ -152,19 +118,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 | `ingestion/googlenews.py` | Google News RSS decoder for protobuf URLs |
 | `ingestion/newsdata.py` | NewsData.io API fetcher by category |
 | `ingestion/scraper.py` | Article body extraction via trafilatura |
-| `ingestion/dedup.py` | URL-based deduplication before storing |
 | `ingestion/embed.py` | 384-dim embeddings via OpenAI or local sentence-transformers |
 | `ingestion/normalize.py` | RawArticle to Article conversion with domain/bias lookup |
-
-**Clustering**
-
-| File | Purpose |
-|------|---------|
-| `clustering/assign.py` | Fast-path: assign unassigned articles to existing stories by embedding similarity |
-| `clustering/discover.py` | HDBSCAN clustering to discover new story clusters from remaining articles |
-| `clustering/split.py` | Split oversized stories into finer-grained sub-stories |
-| `clustering/label.py` | Claude Haiku generates topic labels for unlabeled stories |
-| `clustering/merge.py` | Merge stories that have become too similar after growth |
 
 **Analysis**
 
@@ -172,22 +127,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 |------|---------|
 | `analysis/generator.py` | Claude Sonnet AP-style analysis with contrasts + fact checks |
 | `analysis/staleness.py` | Determines which stories need new/updated analyses |
-| `analysis/framing.py` | Per-article editorial framing classification via Claude Haiku (7 categories) |
+| `analysis/framing.py` | Per-article editorial framing classification via Claude Haiku |
 | `analysis/headlines.py` | Rewrites vague cluster headlines into specific neutral ones |
 
 **Scoring**
 
 | File | Purpose |
 |------|---------|
-| `scoring/impact.py` | 0-100 real-world significance score via Claude Haiku (5 weighted factors) |
-| `scoring/coverage.py` | 0-100 coverage score from article volume, source diversity, recency, velocity |
-| `scoring/attention.py` | 0-100 media attention score — percentile-ranked article/source/bias breadth |
-| `scoring/sentiment.py` | VADER sentiment analysis on headlines, grouped by left/center/right lean |
-| `scoring/timeline.py` | Daily article-count trends, peak date, lifecycle status (breaking → stale) |
-| `scoring/trends.py` | Trend computation from story_daily_counts table |
-| `scoring/gaps.py` | Coverage gap detection — significance vs coverage comparison |
-| `scoring/ranking.py` | Homepage rank score (0-100) from impact, coverage, velocity, recency, framing |
-| `scoring/insights.py` | Category-level gap + surge detection for the frontend insights bar |
+| `scoring/impact.py` | 0-100 real-world significance score (5 weighted factors) |
+| `scoring/gaps.py` | Coverage gap detection — significance vs attention comparison |
 
 **Config & Data**
 
@@ -203,11 +151,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
-| `scripts/backfill_analyses.py` | Generate Claude analyses for stories missing one |
-| `scripts/scrape_backfill.py` | Backfill article bodies via trafilatura |
-| `scripts/filter_topics.py` | GPT-4o-mini significance scoring, coherence check, topic renaming |
-| `scripts/backfill_time_metadata.py` | Populate first_seen, last_article_at, status, velocity |
-| `scripts/backfill_coverage.py` | Compute coverage_score from article count, diversity, recency |
-| `scripts/backfill_daily_counts.py` | Populate story_daily_counts from article publish dates |
-| `scripts/backfill_categories.py` | Categorize stories via keyword matching + Claude fallback |
-| `scripts/migrate_headlines.py` | Fix truncated/vague headlines using Claude Haiku (dry run default) |
+| `scripts/backfill_analyses.py` | Generate analyses for all scored stories missing one |
+| `scripts/scrape_backfill.py` | Backfill article bodies with rate limiting |
+| `scripts/filter_topics.py` | GPT-4o-mini significance scoring and topic renaming |
+| `scripts/backfill_time_metadata.py` | Backfill first_seen, last_article_at, status from timestamps |
+| `scripts/migrate_headlines.py` | Fix truncated/vague/long headlines using Claude Haiku (dry run by default) |
