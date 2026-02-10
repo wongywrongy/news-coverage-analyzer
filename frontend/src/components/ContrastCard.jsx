@@ -1,37 +1,37 @@
 'use client';
 
 export default function ContrastCard({ contrast }) {
-  const framingA = contrast.framingA || '';
-  const framingB = contrast.framingB || '';
-
   return (
-    <div style={{ marginBottom: 32 }}>
-      {/* Angle / theme heading */}
+    <div style={{ marginBottom: 'var(--space-lg)' }}>
+      {/* Theme heading */}
       <div style={{
-        fontFamily: "'Source Serif 4', Georgia, serif",
-        fontSize: 17,
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 16,
         fontWeight: 700,
-        color: '#111827',
-        marginBottom: 16,
+        color: 'var(--ink)',
+        marginBottom: 'var(--space-sm)',
       }}>
         {contrast.theme}
       </div>
 
-      {/* Side-by-side cards with vs connector */}
-      <div className="contrast-layout" style={{ position: 'relative', display: 'flex' }}>
-        {/* Left: blue tint — Framing A */}
+      {/* Two cards side by side */}
+      <div className="contrast-layout" style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 'var(--space-sm)',
+      }}>
+        {/* Framing A — blue left border */}
         <div className="contrast-a" style={{
-          flex: 1,
-          padding: '20px 24px',
-          background: 'rgba(74,111,165,0.04)',
-          borderLeft: '4px solid #4A6FA5',
-          borderTop: '1px solid rgba(74,111,165,0.12)',
-          borderBottom: '1px solid rgba(74,111,165,0.12)',
+          padding: 'var(--space-md)',
+          background: '#FFFFFF',
+          border: '1px solid var(--border)',
+          borderLeft: '3px solid var(--accent-blue)',
+          borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
         }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 10,
-            color: '#4A6FA5',
+            color: 'var(--accent-blue)',
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
             marginBottom: 10,
@@ -40,96 +40,38 @@ export default function ContrastCard({ contrast }) {
             Framing A
           </div>
           <p style={{
-            fontFamily: "'Source Serif 4', Georgia, serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
-            color: '#1F2937',
-            lineHeight: 1.7,
+            color: 'var(--ink)',
+            lineHeight: 1.6,
             marginBottom: 14,
           }}>
             {contrast.claimA}
           </p>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            color: '#4A6FA5',
-            fontWeight: 500,
+            fontSize: 11,
+            color: 'var(--ink-muted)',
           }}>
             {contrast.sourceA}
-            {framingA && <span style={{ color: '#9CA3AF', fontWeight: 400, marginLeft: 6 }}>({framingA})</span>}
+            {contrast.framingA && (
+              <span> &middot; {contrast.framingA}</span>
+            )}
           </div>
         </div>
 
-        {/* Center connector — desktop */}
-        <div className="contrast-connector-desktop" style={{
-          width: 44,
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <div style={{ color: '#4A6FA5', fontSize: 14, lineHeight: 1, marginBottom: 2 }}>&#9668;</div>
-          <div style={{ width: 1, height: 24, background: '#D0D0D0' }} />
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            background: '#F0ECE2',
-            border: '2px solid #D0D0D0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 9,
-            fontWeight: 700,
-            color: '#6B7280',
-          }}>
-            vs
-          </div>
-          <div style={{ width: 1, height: 24, background: '#D0D0D0' }} />
-          <div style={{ color: '#C8A84E', fontSize: 14, lineHeight: 1, marginTop: 2 }}>&#9658;</div>
-        </div>
-
-        {/* Center connector — mobile (hidden by default, shown at ≤640px) */}
-        <div className="contrast-connector-mobile" style={{
-          display: 'none',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '8px 0',
-        }}>
-          <div style={{ width: 1, height: 12, background: '#D0D0D0' }} />
-          <div style={{
-            width: 26,
-            height: 26,
-            borderRadius: '50%',
-            background: '#F0ECE2',
-            border: '2px solid #D0D0D0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 9,
-            fontWeight: 700,
-            color: '#6B7280',
-          }}>
-            vs
-          </div>
-          <div style={{ width: 1, height: 12, background: '#D0D0D0' }} />
-        </div>
-
-        {/* Right: gold tint — Framing B */}
+        {/* Framing B — gold left border */}
         <div className="contrast-b" style={{
-          flex: 1,
-          padding: '20px 24px',
-          background: 'rgba(200,168,78,0.04)',
-          borderRight: '4px solid #C8A84E',
-          borderTop: '1px solid rgba(200,168,78,0.12)',
-          borderBottom: '1px solid rgba(200,168,78,0.12)',
+          padding: 'var(--space-md)',
+          background: '#FFFFFF',
+          border: '1px solid var(--border)',
+          borderLeft: '3px solid var(--accent-gold)',
+          borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
         }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 10,
-            color: '#A08520',
+            color: 'var(--accent-gold)',
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
             marginBottom: 10,
@@ -138,26 +80,26 @@ export default function ContrastCard({ contrast }) {
             Framing B
           </div>
           <p style={{
-            fontFamily: "'Source Serif 4', Georgia, serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontSize: 15,
-            color: '#1F2937',
-            lineHeight: 1.7,
+            color: 'var(--ink)',
+            lineHeight: 1.6,
             marginBottom: 14,
           }}>
             {contrast.claimB}
           </p>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            color: '#A08520',
-            fontWeight: 500,
+            fontSize: 11,
+            color: 'var(--ink-muted)',
           }}>
             {contrast.sourceB}
-            {framingB && <span style={{ color: '#9CA3AF', fontWeight: 400, marginLeft: 6 }}>({framingB})</span>}
+            {contrast.framingB && (
+              <span> &middot; {contrast.framingB}</span>
+            )}
           </div>
         </div>
       </div>
-
     </div>
   );
 }

@@ -60,6 +60,7 @@ export default function TopicCard({ story, index = 0 }) {
   return (
     <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
       <div
+        className="topic-card"
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -143,7 +144,7 @@ export default function TopicCard({ story, index = 0 }) {
           </div>
 
           {/* Title */}
-          <div style={{
+          <div className="topic-title" style={{
             fontFamily: "'Playfair Display', serif",
             fontWeight: 700,
             fontSize: 20,
@@ -218,7 +219,7 @@ export default function TopicCard({ story, index = 0 }) {
         </div>
 
         {/* Right: Scores */}
-        <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+        <div className="topic-scores" style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
           {/* Impact */}
           <div style={{ textAlign: 'center', minWidth: 56 }}>
             <div style={{

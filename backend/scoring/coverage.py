@@ -2,19 +2,17 @@
 
 No AI calls.  Computes a 0-100 score from four weighted components:
 
-    article_count_norm  (40%)  story's article count / max across all active stories
-    source_diversity    (30%)  unique sources / total monitored sources
-    recency             (20%)  inverse decay from hours since last article
+    article_volume      (40%)  percentile rank of article count across active stories
+    source_diversity    (30%)  unique sources / ceiling of 20 (realistic max)
+    recency             (20%)  step-based: 100 <6h, 80 <24h, 60 <48h, 40 <96h, 20 else
     velocity            (10%)  articles in last 24h / articles in prior 24h
 
 The result is stored as ``coverage_score`` on the story row.
 """
 
 import logging
-import math
 from datetime import datetime, timezone
 
-from config.sources import SOURCE_BIAS
 from db.queries import (
     get_active_stories,
     get_articles_for_story,
@@ -30,25 +28,31 @@ W_SOURCE_DIVERSITY = 0.30
 W_RECENCY = 0.20
 W_VELOCITY = 0.10
 
-TOTAL_MONITORED_SOURCES = len(SOURCE_BIAS) or 40  # fallback if config empty
+# 20+ unique sources = perfect score.  Most stories have 3-8;
+# even major stories rarely exceed 20 distinct outlets.
+SOURCE_DIVERSITY_CEILING = 20
 
 
 # ── Component helpers ────────────────────────────────────────────────────────
 
 
-def _article_count_norm(story_count: int, max_count: int) -> float:
-    """Normalize article count as ratio of max across all active stories.
+def _article_count_percentile(story_count: int, all_counts: list[int]) -> float:
+    """Percentile rank of this story's article count among all active stories.
 
+    A story with more articles than 80% of stories scores 80.
+    Eliminates outlier distortion from max-normalization.
     Returns 0-100.
     """
-    if max_count <= 0:
-        return 0.0
-    return min(100.0, (story_count / max_count) * 100)
+    if not all_counts or len(all_counts) < 2:
+        return 50.0
+    rank = sum(1 for v in all_counts if v <= story_count)
+    return round((rank / len(all_counts)) * 100)
 
 
 def _source_diversity(articles: list[dict]) -> float:
-    """Unique sources covering this story / total monitored sources.
+    """Unique sources covering this story, capped at SOURCE_DIVERSITY_CEILING.
 
+    20+ unique sources = 100.  10 sources = 50.  3 sources = 15.
     Returns 0-100.
     """
     unique_sources = {
@@ -56,24 +60,26 @@ def _source_diversity(articles: list[dict]) -> float:
         for a in articles
         if a.get("source_domain") or a.get("source_name")
     }
-    return min(100.0, (len(unique_sources) / TOTAL_MONITORED_SOURCES) * 100)
+    return min(100.0, round((len(unique_sources) / SOURCE_DIVERSITY_CEILING) * 100))
 
 
 def _recency_score(hours_since_last: float | None) -> float:
-    """Inverse decay from hours since last article.
+    """Step-based recency with gentle decay.
 
-    100 if <1hr, 50 at 12hr, 25 at 24hr, 10 at 48hr+.
-    Uses exponential decay to hit these approximate breakpoints.
+    Stories stay at 80+ for a full day, 60 for two days.
+    Penalty only gets steep after 4 days of silence.
     """
     if hours_since_last is None:
         return 0.0
-    if hours_since_last < 1:
+    if hours_since_last < 6:
         return 100.0
-    # Exponential decay: 100 * e^(-k*h) where k calibrated so f(12)≈50
-    # ln(0.5)/12 ≈ -0.0578
-    k = 0.0578
-    score = 100.0 * math.exp(-k * hours_since_last)
-    return max(score, 0.0)
+    if hours_since_last < 24:
+        return 80.0
+    if hours_since_last < 48:
+        return 60.0
+    if hours_since_last < 96:
+        return 40.0
+    return 20.0
 
 
 def _velocity_score(articles: list[dict]) -> float:
@@ -116,22 +122,22 @@ def _velocity_score(articles: list[dict]) -> float:
 def compute_coverage_score(
     story: dict,
     articles: list[dict],
-    max_article_count: int,
+    all_article_counts: list[int],
 ) -> tuple[int, dict]:
     """Compute coverage score (0-100) for a single story.
 
     Args:
-        story:             Story dict with at least ``article_count``.
-        articles:          Articles belonging to this story.
-        max_article_count: Maximum article_count across all active stories.
+        story:              Story dict with at least ``article_count``.
+        articles:           Articles belonging to this story.
+        all_article_counts: Article counts for all active stories (for percentile).
 
     Returns:
         (score 0-100, breakdown dict with component values)
     """
     story_count = story.get("article_count") or len(articles)
 
-    # 1. Article count norm
-    acn = _article_count_norm(story_count, max_article_count)
+    # 1. Article volume (percentile rank)
+    acn = _article_count_percentile(story_count, all_article_counts)
 
     # 2. Source diversity
     sd = _source_diversity(articles)
@@ -199,11 +205,10 @@ def score_coverage(
     if not targets:
         return {"scored": 0, "scores": []}
 
-    # Max article count across ALL active stories (for normalization)
-    max_article_count = max(
-        (s.get("article_count") or 0 for s in all_stories), default=1
-    )
-    max_article_count = max(max_article_count, 1)  # avoid division by zero
+    # Collect all article counts for percentile normalization
+    all_article_counts = [
+        s.get("article_count") or 0 for s in all_stories if (s.get("article_count") or 0) > 0
+    ]
 
     # Fetch articles if not provided
     if story_articles is None:
@@ -216,7 +221,7 @@ def score_coverage(
         sid = story["id"]
         articles = story_articles.get(sid, [])
 
-        score, breakdown = compute_coverage_score(story, articles, max_article_count)
+        score, breakdown = compute_coverage_score(story, articles, all_article_counts)
 
         results.append({
             "story_id": sid,

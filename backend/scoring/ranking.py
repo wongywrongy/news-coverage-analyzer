@@ -2,10 +2,10 @@
 
 Computes a rank_score (0-100) from five weighted components:
 
-    impact_weight       (30%)  raw impact_score
-    gap_weight          (25%)  abs(impact_score - coverage_score)
-    recency_weight      (20%)  100 if articles today, decays over 72h
-    velocity_weight     (15%)  articles last 24h vs prior 24h ratio
+    impact_weight       (35%)  raw impact_score
+    coverage_weight     (20%)  raw coverage_score (heavily covered = headliner)
+    velocity_weight     (20%)  articles last 24h vs prior 24h ratio
+    recency_weight      (15%)  100 if articles today, decays over 72h
     framing_diversity   (10%)  number of distinct primary_framings / 7
 
 Also assigns a featured_reason string explaining why the topic ranked.
@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 
 # ── Weights ──────────────────────────────────────────────────────────────────
 
-W_IMPACT = 0.30
-W_GAP = 0.25
-W_RECENCY = 0.20
-W_VELOCITY = 0.15
+W_IMPACT = 0.35
+W_COVERAGE = 0.20
+W_VELOCITY = 0.20
+W_RECENCY = 0.15
 W_FRAMING = 0.10
 
 # Total known framing categories from analysis/framing.py
@@ -133,25 +133,25 @@ def compute_rank_score(
     coverage = story.get("coverage_score") or story.get("attention_score") or 0
 
     impact_component = min(impact, 100)
-    gap_component = min(abs(impact - coverage), 100)
+    coverage_component = min(coverage, 100)
     recency_component = _recency_factor(story)
     velocity_component = _velocity_factor(story)
     framing_component = _framing_diversity(source_framings or [])
 
     raw = (
         impact_component * W_IMPACT
-        + gap_component * W_GAP
-        + recency_component * W_RECENCY
+        + coverage_component * W_COVERAGE
         + velocity_component * W_VELOCITY
+        + recency_component * W_RECENCY
         + framing_component * W_FRAMING
     )
     score = min(100.0, round(raw, 1))
 
     breakdown = {
         "impact": round(impact_component, 1),
-        "gap": round(gap_component, 1),
-        "recency": round(recency_component, 1),
+        "coverage": round(coverage_component, 1),
         "velocity": round(velocity_component, 1),
+        "recency": round(recency_component, 1),
         "framing": round(framing_component, 1),
         "final": score,
     }
@@ -279,8 +279,8 @@ if __name__ == "__main__":
             f"  Story #{s['story_id']}: rank={s['rank_score']}"
             f"  reason={s['featured_reason']}"
             f"  (impact={b['impact']:.0f}"
-            f"  gap={b['gap']:.0f}"
-            f"  recency={b['recency']:.0f}"
+            f"  coverage={b['coverage']:.0f}"
             f"  velocity={b['velocity']:.0f}"
+            f"  recency={b['recency']:.0f}"
             f"  framing={b['framing']:.0f})"
         )

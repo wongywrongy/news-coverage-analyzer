@@ -33,11 +33,13 @@ For each story, choose ONE action:
 - "re_analyze": Story already has analysis but significant developments warrant a refresh
 - "skip": Not worth analyzing (or analysis is still fresh)
 
-PRIORITIZE stories that are:
-1. High-impact (impact_score, significance_score)
-2. Actively developing (recent articles, growing coverage)
-3. Covered by multiple sources (good for contrasts)
-4. Missing analysis entirely (analyze_new over re_analyze when close)
+PRIORITIZE stories where:
+1. Impact score is high AND multiple sources are covering it (major stories readers expect to see)
+2. Article velocity is increasing (stories gaining momentum right now)
+3. High framing divergence is likely (politically charged topics, policy debates, investigations)
+4. Multiple ideologically diverse sources are covering it (more contrast potential)
+5. Undercovered high-impact stories are still valuable but should not dominate — feature 1-2 per cycle max
+6. Missing analysis entirely (analyze_new over re_analyze when close)
 
 SKIP stories that are:
 - Low significance (< 30 score)

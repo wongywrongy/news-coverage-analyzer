@@ -358,5 +358,113 @@
     "reason_flagged": "vague opener ('report:')",
     "similarity": 0.525,
     "timestamp": "2026-02-08T18:10:22.882586+00:00"
+  },
+  {
+    "story_id": 351,
+    "old_headline": "3 Compact SUVs Consumer Reports Rates Higher Than Honda's 2026 CR-V",
+    "new_headline": "Consumer Reports rates three compact SUVs higher than 2026 Honda CR-V",
+    "rationale": "The original title is specific but inverted the logical hierarchy by leading with a number rather than the subject; this rewrite clarifies the main finding (CR-V's ranking position) while remaining factual and neutral.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.662,
+    "timestamp": "2026-02-09T08:36:52.518206+00:00"
+  },
+  {
+    "story_id": 311,
+    "old_headline": "Portugal Presidential Election Results",
+    "new_headline": "António Seguro wins Portugal presidential runoff election",
+    "rationale": "The original title was vague about what happened; this specifies the event (runoff election), the winner (Seguro), and the country, eliminating generic phrasing while avoiding emotional descriptors like 'landslide.'",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.632,
+    "timestamp": "2026-02-09T08:36:55.293425+00:00"
+  },
+  {
+    "story_id": 60,
+    "old_headline": "US-Russia Nuclear Treaty Expiration",
+    "new_headline": "New START nuclear treaty between US and Russia expires",
+    "rationale": "The original title was vague about which treaty and what 'expiration' meant; this specifies it's the New START treaty and clarifies the event is its expiration date passing.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-09T08:36:57.685435+00:00"
+  },
+  {
+    "story_id": 471,
+    "old_headline": "How to raise a low",
+    "new_headline": "Public housing projects in United States: history and decline",
+    "rationale": "The original title 'How to raise a low' is incomplete and unintelligible; the rewrite specifies the actual subject (public housing projects) and their trajectory based on the article's lede about their rise and eventual demolition.",
+    "reason_flagged": "too short (18 chars)",
+    "similarity": 0.253,
+    "timestamp": "2026-02-09T08:37:00.235611+00:00"
+  },
+  {
+    "story_id": 345,
+    "old_headline": "Relationships Family Lifestyle Advice",
+    "new_headline": "Celebrity and expert perspectives on modern relationships and family dynamics",
+    "rationale": "The original title was a generic category label; this headline specifies that the cluster contains commentary from celebrities and experts on relationship and family topics, which is what the articles actually discuss.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.439,
+    "timestamp": "2026-02-09T08:37:03.543781+00:00"
+  },
+  {
+    "story_id": 312,
+    "old_headline": "Gaza Reconstruction Displacement Controversy",
+    "new_headline": "Gaza reconstruction, border crossing reopening, and military operations amid humanitarian concerns",
+    "rationale": "The original title was vague about which specific issues were contested; this headline specifies the three main topics (reconstruction, border crossing, military operations) that appear across the article cluster while remaining neutral about the disputes surrounding them.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.465,
+    "timestamp": "2026-02-09T08:37:06.097829+00:00"
+  },
+  {
+    "story_id": 103,
+    "old_headline": "Montague Housing Coalition Formed",
+    "new_headline": "Montague Housing Coalition holds first meeting on affordability",
+    "rationale": "The original title merely announces the coalition's formation without specifying its purpose; this version identifies the concrete action (first meeting) and stated focus (housing affordability).",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.646,
+    "timestamp": "2026-02-09T08:37:08.858879+00:00"
+  },
+  {
+    "story_id": 366,
+    "old_headline": "Man City fight back to win 2",
+    "new_headline": "Manchester City defeats Liverpool 2-1 with stoppage-time Haaland penalty",
+    "rationale": "The original 'Man City fight back to win 2' lacks specificity about the opponent, final score, and key detail (Haaland's penalty); the rewrite provides concrete facts about the match outcome and decisive moment.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.34,
+    "timestamp": "2026-02-09T08:37:12.701099+00:00"
+  },
+  {
+    "story_id": 431,
+    "old_headline": "Gaming Entertainment Updates Announced",
+    "new_headline": "Honkai: Star Rail version 4.0, PARANORMASIGHT sequel, and Mercy film announced",
+    "rationale": "The original title 'Gaming Entertainment Updates Announced' is vague and could describe any gaming news; this revision specifies the three distinct entertainment announcements across the articles while remaining neutral and factual.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.379,
+    "timestamp": "2026-02-09T08:37:15.216501+00:00"
+  },
+  {
+    "story_id": 196,
+    "old_headline": "NBA Teams Make Roster Moves",
+    "new_headline": "NBA Teams Complete Roster Moves and Players Post Notable Performances",
+    "rationale": "The original title 'NBA Teams Make Roster Moves' was vague about which teams and what moves; this version specifies the actual content includes roster signings, player statistics, and game results across multiple NBA teams and games.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.521,
+    "timestamp": "2026-02-09T08:37:18.204637+00:00"
+  },
+  {
+    "story_id": 414,
+    "old_headline": "Man Contracts Flesh",
+    "new_headline": "Man contracts flesh-eating bacteria from scratch at vacation destination",
+    "rationale": "The original title 'Man Contracts Flesh' is incomplete and vague; this version specifies the type of pathogen (flesh-eating bacteria), the cause (scratch), and context (vacation destination) while maintaining neutrality.",
+    "reason_flagged": "too short (19 chars)",
+    "similarity": 0.418,
+    "timestamp": "2026-02-09T08:37:20.413448+00:00"
+  },
+  {
+    "story_id": 412,
+    "old_headline": "CONFIDENCE SHIFT",
+    "new_headline": "Public opinion surveys show shifts in voter confidence across elections",
+    "rationale": "The original 'CONFIDENCE SHIFT' is entirely vague and generic; the rewritten headline specifies that this concerns public opinion data and voter confidence, which appears to be the common thread connecting the election-focused articles in this cluster.",
+    "reason_flagged": "too short (16 chars)",
+    "similarity": 0.299,
+    "timestamp": "2026-02-09T08:37:23.170169+00:00"
   }
 ]

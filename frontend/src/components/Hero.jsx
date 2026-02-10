@@ -23,7 +23,7 @@ export default function Hero({ stats, categorySummary }) {
   const articlesCollected = stats?.articleCount || 0;
 
   return (
-    <section style={{
+    <section className="hero-section" style={{
       position: 'relative',
       padding: '80px 48px 60px',
       overflow: 'hidden',
@@ -59,7 +59,7 @@ export default function Hero({ stats, categorySummary }) {
       }}>
         {/* Left column */}
         <div>
-          <h1 style={{
+          <h1 className="hero-title" style={{
             fontFamily: "'Playfair Display', serif",
             fontWeight: 900,
             fontSize: 58,
@@ -101,16 +101,16 @@ export default function Hero({ stats, categorySummary }) {
             marginBottom: 48,
             animation: 'fadeUp 0.6s ease 0.2s both',
           }}>
-            <a href="#methodology" style={{
+            <a href="/methodology" style={{
               fontSize: 14,
               fontWeight: 600,
               color: 'var(--accent-blue-deep)',
               textDecoration: 'none',
             }}>
-              How It Works
+              Methodology
             </a>
             <span style={{ width: 1, height: 16, background: 'var(--border)' }} />
-            <a href="#archive" style={{
+            <a href="/archive" style={{
               fontSize: 14,
               fontWeight: 600,
               color: 'var(--accent-blue-deep)',

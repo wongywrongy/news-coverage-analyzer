@@ -1,6 +1,6 @@
 export default function Header({ stats }) {
   return (
-    <nav style={{
+    <nav className="header-nav" style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -22,8 +22,8 @@ export default function Header({ stats }) {
         <span style={{ color: '#1A1A1A' }}>Clear</span>
         <span style={{ color: 'var(--accent-gold)' }}>Signal</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <span style={{
+      <div className="nav-stats" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <span className="nav-stat" style={{
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 12,
           color: 'var(--ink-muted)',
@@ -32,16 +32,16 @@ export default function Header({ stats }) {
           <strong style={{ color: 'var(--ink)', fontSize: 14 }}>
             {stats?.totalTracked || 0}
           </strong>{' '}
-          topics tracked
+          <span className="nav-stat-label">topics tracked</span>
         </span>
-        <span style={{
+        <span className="nav-stat" style={{
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 12,
           color: 'var(--ink-muted)',
           letterSpacing: '0.5px',
         }}>
           <strong style={{ color: 'var(--ink)', fontSize: 14 }}>100+</strong>{' '}
-          sources
+          <span className="nav-stat-label">sources</span>
         </span>
       </div>
     </nav>

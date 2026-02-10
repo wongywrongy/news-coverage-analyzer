@@ -9,7 +9,7 @@ export default function InsightsBar({ insights }) {
       padding: '20px 0',
       marginBottom: 40,
     }}>
-      <div style={{
+      <div className="insights-inner" style={{
         maxWidth: 1280,
         margin: '0 auto',
         padding: '0 48px',
@@ -19,7 +19,7 @@ export default function InsightsBar({ insights }) {
         {insights.map((insight, i) => (
           <div key={i} style={{ display: 'contents' }}>
             {i > 0 && (
-              <div style={{
+              <div className="insights-divider" style={{
                 width: 1,
                 background: 'var(--border)',
                 margin: '0 32px',

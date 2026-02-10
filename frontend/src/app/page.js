@@ -7,12 +7,23 @@ import Footer from '../components/Footer';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [stories, stats, insights, categorySummary] = await Promise.all([
+  const defaults = [
+    [],
+    { analyzedCount: 0, articleCount: 0, totalTracked: 0 },
+    [],
+    { categories: [] },
+  ];
+
+  const results = await Promise.allSettled([
     getStories(),
     getDashboardStats(),
     getInsights(),
     getCategorySummary(),
   ]);
+
+  const [stories, stats, insights, categorySummary] = results.map((r, i) =>
+    r.status === 'fulfilled' ? r.value : defaults[i],
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>

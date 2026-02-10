@@ -45,8 +45,8 @@ BANNER = r"""
 
 STAGES = {
     "ingest":  "Fetch, normalize, deduplicate, embed, store",
-    "cluster": "Assign articles to stories, discover clusters",
-    "score":   "Impact scoring, attention, gap detection",
+    "cluster": "Assign, discover, split, label, rename, merge",
+    "score":   "Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights",
     "select":  "GPT-4o-mini editorial selection for analysis",
     "scrape":  "Extract article bodies via trafilatura",
     "analyze": "Generate Claude-powered neutral analyses",
@@ -275,8 +275,8 @@ def main() -> None:
         epilog=(
             "stages:\n"
             "  ingest    Fetch, normalize, deduplicate, embed, store\n"
-            "  cluster   Assign articles to stories, discover clusters\n"
-            "  score     Impact scoring, attention, gap detection\n"
+            "  cluster   Assign, discover, split, label, rename, merge\n"
+            "  score     Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights\n"
             "  select    GPT-4o-mini editorial selection for analysis\n"
             "  scrape    Extract article bodies via trafilatura\n"
             "  analyze   Generate Claude-powered neutral analyses\n"

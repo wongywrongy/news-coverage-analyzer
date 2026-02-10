@@ -5,15 +5,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function StoryDetailPage({ params }) {
   const { id } = params;
-  const { story, analysis, sourceList } = await getStory(id);
+  let story = null, analysis = null, sourceList = [], biasCounts = {};
+  try {
+    ({ story, analysis, sourceList, biasCounts } = await getStory(id));
+  } catch (e) {
+    console.error('StoryDetailPage fetch error:', e);
+  }
 
   if (!story) {
     return (
-      <div style={{ minHeight: '100vh', background: '#F0ECE2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontSize: 14, color: '#9CA3AF', fontFamily: "'JetBrains Mono', monospace" }}>Story not found.</p>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontSize: 14, color: 'var(--ink-muted)', fontFamily: "'JetBrains Mono', monospace" }}>Story not found.</p>
       </div>
     );
   }
 
-  return <StoryDetail story={story} analysis={analysis} sourceList={sourceList} />;
+  return <StoryDetail story={story} analysis={analysis} sourceList={sourceList} biasCounts={biasCounts} />;
 }

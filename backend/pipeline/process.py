@@ -4,11 +4,12 @@ This file contains NO business logic — just calls modules in sequence
 and prints a summary.
 
 Full pipeline order:
-    INGEST -> CLUSTER -> SCORE -> ANALYZE
+    INGEST -> CLUSTER -> SCORE -> SELECT -> SCRAPE -> ANALYZE
 
-    Clustering: assign -> discover -> split -> label -> merge
-    Scoring:    impact -> handle outliers -> attention -> sentiment -> timeline -> gaps
-    Analysis:   staleness check -> generate (top 5 priority) -> store
+    Clustering: assign -> discover -> split -> label -> rename headlines -> merge
+    Scoring:    impact -> outliers -> attention -> coverage -> sentiment ->
+                timeline -> gaps -> ranking -> insights -> deactivate stale
+    Analysis:   staleness check -> framing classification -> generate -> store
 
 Usage:
     python -m pipeline.process

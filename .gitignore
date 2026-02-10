@@ -13,3 +13,6 @@ node_modules/
 .claude/
 .backend/.env.example
 .backend/SETUP.md
+
+.vercel
+.env*.local
