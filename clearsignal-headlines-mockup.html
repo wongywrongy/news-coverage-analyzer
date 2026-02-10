@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClearSignal — Homepage with Headlines Section</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --bg-card: #FFFFFF;
+    --bg-warm: #F4F1EB;
+    --bg-dark: #1B1B1B;
+    --ink: #1A1A1A;
+    --ink-secondary: #5A5A5A;
+    --ink-muted: #767676;
+    --accent-gold: #C8963E;
+    --accent-blue: #2B4C7E;
+    --accent-blue-deep: #1B3155;
+    --accent-red: #C0392B;
+    --accent-green: #27AE60;
+    --cat-politics: #C0392B;
+    --cat-world: #2B4C7E;
+    --cat-economy: #C8963E;
+    --cat-science: #27AE60;
+    --border: #E8E6E1;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --space-xs: 8px;
+    --space-sm: 16px;
+    --space-md: 24px;
+    --space-lg: 40px;
+    --space-xl: 56px;
+    --space-section: 56px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(250,250,247,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent-gold); }
+  .nav-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .nav-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .nav-stat strong {
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  /* ─── HEADLINES SECTION (dark, compact) ─── */
+  .headlines-section {
+    background: var(--bg-dark);
+    color: #fff;
+    padding: var(--space-lg) 48px var(--space-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .headlines-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(200,150,62,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(43,76,126,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .headlines-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .headlines-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+  }
+  .headlines-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent-gold);
+  }
+  .headlines-sublabel {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* Headlines grid: 1 large + 2 stacked */
+  .headlines-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: var(--space-sm);
+    animation: fadeUp 0.5s ease both;
+  }
+
+  /* Lead story (large) */
+  .headline-lead {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .headline-lead::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent-gold);
+    border-radius: 0 2px 2px 0;
+  }
+  .headline-lead:hover {
+    border-color: rgba(255,255,255,0.25);
+  }
+  .headline-lead .hl-cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent-gold);
+    margin-bottom: var(--space-sm);
+  }
+  .headline-lead .hl-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 26px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--space-xs);
+  }
+  .headline-lead .hl-lede {
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: var(--space-sm);
+  }
+  .headline-lead .hl-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: auto;
+  }
+
+  /* Side stories (stacked) */
+  .headlines-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .headline-card {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: var(--space-sm) var(--space-md);
+    transition: border-color 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .headline-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+  }
+  .headline-card.politics::before { background: var(--cat-politics); }
+  .headline-card.world::before { background: var(--cat-world); }
+  .headline-card.economy::before { background: var(--cat-economy); }
+  .headline-card.science::before { background: var(--cat-science); }
+  .headline-card:hover {
+    border-color: rgba(255,255,255,0.25);
+  }
+  .headline-card .hl-cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--space-xs);
+  }
+  .headline-card.politics .hl-cat { color: #E8756B; }
+  .headline-card.world .hl-cat { color: #6B9FD4; }
+  .headline-card.economy .hl-cat { color: var(--accent-gold); }
+  .headline-card.science .hl-cat { color: #5BC88A; }
+  .headline-card .hl-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 17px;
+    line-height: 1.25;
+    letter-spacing: -0.2px;
+    margin-bottom: auto;
+  }
+  .headline-card .hl-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  /* Shared meta elements */
+  .hl-source-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+  }
+  .hl-impact {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+  }
+  .hl-impact strong {
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+  }
+  .hl-trend {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .hl-trend.trending {
+    color: var(--accent-gold);
+    background: rgba(200,150,62,0.15);
+  }
+  .hl-trend.divergent {
+    color: #E8756B;
+    background: rgba(232,117,107,0.15);
+  }
+  .hl-divider {
+    width: 1px;
+    height: 12px;
+    background: rgba(255,255,255,0.15);
+  }
+
+  /* ─── TRANSITION TO MAIN CONTENT ─── */
+  .content-transition {
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── HERO MAIN (tagline + stats, centered) ─── */
+  .hero-main {
+    padding: var(--space-xl) 48px var(--space-lg);
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-main-inner {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .hero-main h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 48px;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: var(--space-sm);
+  }
+  .hero-main h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent-gold), #D4A853);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-subtitle {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--ink-secondary);
+    margin-bottom: var(--space-lg);
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+  }
+  .hero-stat { position: relative; }
+  .hero-stat:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -24px;
+    top: 4px;
+    height: 36px;
+    width: 1px;
+    background: var(--border);
+  }
+  .hero-stat-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: var(--accent-blue-deep);
+  }
+  .hero-stat-label {
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* ─── COVERAGE SECTION ─── */
+  .coverage-section {
+    padding: var(--space-xl) 48px;
+    background: var(--bg-warm);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .coverage-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+  .coverage-narrative {
+    padding-top: var(--space-xs);
+  }
+  .coverage-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--accent-gold);
+    display: block;
+    margin-bottom: var(--space-xs);
+  }
+  .coverage-headline {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin-bottom: var(--space-sm);
+  }
+  .coverage-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-secondary);
+    margin-bottom: var(--space-lg);
+  }
+  .coverage-links {
+    display: flex;
+    gap: var(--space-sm);
+  }
+  .coverage-btn {
+    padding: 14px 24px;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .coverage-btn strong {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .coverage-btn span {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+  .coverage-btn.primary {
+    background: var(--accent-blue-deep);
+    color: #fff;
+  }
+  .coverage-btn.primary:hover {
+    background: var(--accent-blue);
+    transform: translateY(-1px);
+  }
+  .coverage-btn.secondary {
+    background: transparent;
+    color: var(--accent-blue-deep);
+    border: 1.5px solid var(--accent-blue-deep);
+  }
+  .coverage-btn.secondary span {
+    color: var(--ink-muted);
+  }
+  .coverage-btn.secondary:hover {
+    background: var(--accent-blue-deep);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .coverage-btn.secondary:hover span {
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* ─── COVERAGE CHART ─── */
+  .coverage-chart {
+    width: 100%;
+  }
+
+  /* ─── BAR CHART ─── */
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--space-md);
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-muted);
+  }
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+  }
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .legend-swatch.impact { background: #D1D5DB; }
+  .legend-swatch.coverage { background: var(--accent-blue-deep); }
+  .chart-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .chart-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+  .chart-cat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+  .chart-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chart-bars {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .chart-bar-track {
+    height: 20px;
+    background: transparent;
+    border-radius: 3px;
+    position: relative;
+  }
+  .chart-bar {
+    height: 100%;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .chart-bar span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .chart-bar.impact {
+    background: #D1D5DB;
+  }
+  .chart-bar.impact span { color: var(--ink-secondary); }
+  .chart-bar.coverage {
+    background: var(--accent-blue-deep);
+  }
+  .chart-bar.coverage span { color: #fff; }
+
+  /* ─── TABS + TOPICS (unchanged from existing design) ─── */
+  .tabs-section {
+    position: sticky;
+    top: 57px;
+    z-index: 99;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .tabs {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 48px;
+    display: flex;
+    gap: 32px;
+  }
+  .tab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    padding: 16px 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    color: var(--accent-blue-deep);
+    border-bottom-color: var(--accent-blue-deep);
+  }
+  .tab:hover:not(.active) { color: var(--ink-secondary); }
+
+  /* ─── INSIGHTS BAR (ticker) ─── */
+  .insights-bar {
+    background: var(--bg-warm);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    overflow: hidden;
+  }
+  .insights-bar-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 48px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+  .insight-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+  }
+  .insight-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .insight-icon.under { color: var(--accent-gold); }
+  .insight-icon.surge { color: var(--accent-blue); }
+  .insight-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .insight-tag.under { color: var(--accent-gold); }
+  .insight-tag.surge { color: var(--accent-blue); }
+  .insight-desc {
+    font-size: 13px;
+    color: var(--ink-secondary);
+  }
+  .insight-sep {
+    color: var(--border);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ─── TOPIC CARDS (simplified for mockup) ─── */
+  .topics-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--space-lg) 48px;
+  }
+  .topic-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-sm);
+    background: var(--bg-card);
+    border-left: 4px solid var(--border);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .topic-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-left-width: 6px;
+  }
+  .topic-card.politics { border-left-color: var(--cat-politics); }
+  .topic-card.world { border-left-color: var(--cat-world); }
+  .topic-card.economy { border-left-color: var(--cat-economy); }
+  .topic-card.science { border-left-color: var(--cat-science); }
+  .topic-left {
+    flex: 1;
+  }
+  .topic-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: 6px;
+  }
+  .topic-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .topic-badge.politics { color: var(--cat-politics); background: rgba(192,57,43,0.08); }
+  .topic-badge.world { color: var(--cat-world); background: rgba(43,76,126,0.08); }
+  .topic-badge.economy { color: var(--cat-economy); background: rgba(200,150,62,0.08); }
+  .topic-badge.science { color: var(--cat-science); background: rgba(39,174,96,0.08); }
+  .topic-articles {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .topic-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+  }
+  .topic-scores {
+    display: flex;
+    gap: var(--space-md);
+    flex-shrink: 0;
+    margin-left: var(--space-lg);
+  }
+  .topic-score {
+    text-align: center;
+  }
+  .topic-score-val {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: #6B6B6B;
+  }
+  .topic-score-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--ink-muted);
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    text-align: center;
+    padding: var(--space-lg) 48px;
+    border-top: 1px solid var(--border);
+  }
+  footer p {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Clear<span>Signal</span></div>
+  <div class="nav-meta">
+    <span class="nav-stat"><strong>289</strong> topics tracked</span>
+    <span class="nav-stat"><strong>100+</strong> sources</span>
+  </div>
+</nav>
+
+<!-- ═══════════ HEADLINES SECTION (NEW — dark band) ═══════════ -->
+<section class="headlines-section">
+  <div class="headlines-inner">
+    <div class="headlines-header">
+      <span class="headlines-label">Top Stories Right Now</span>
+      <span class="headlines-sublabel">Ranked by impact, coverage, and framing divergence</span>
+    </div>
+
+    <div class="headlines-grid">
+      <!-- Lead story -->
+      <div class="headline-lead">
+        <div>
+          <div class="hl-cat">World & Security</div>
+          <div class="hl-title">Trump Administration Freezes Foreign Aid Pending Policy Review</div>
+          <div class="hl-lede">Multiple agencies halt disbursements as the administration launches a sweeping review of U.S. foreign assistance. Sources disagree sharply on scope and timeline.</div>
+        </div>
+        <div class="hl-meta">
+          <span class="hl-source-count">38 articles · 22 sources</span>
+          <span class="hl-divider"></span>
+          <span class="hl-impact">Impact <strong>94</strong></span>
+          <span class="hl-divider"></span>
+          <span class="hl-trend divergent">High framing divergence</span>
+        </div>
+      </div>
+
+      <!-- Side stories -->
+      <div class="headlines-side">
+        <div class="headline-card politics">
+          <div class="hl-cat">Politics & Law</div>
+          <div class="hl-title">Senate Confirms Kash Patel as FBI Director in Party-Line Vote</div>
+          <div class="hl-meta">
+            <span class="hl-source-count">29 articles · 18 sources</span>
+            <span class="hl-divider"></span>
+            <span class="hl-impact">Impact <strong>88</strong></span>
+            <span class="hl-divider"></span>
+            <span class="hl-trend trending">↑ Trending</span>
+          </div>
+        </div>
+
+        <div class="headline-card economy">
+          <div class="hl-cat">Economy & Business</div>
+          <div class="hl-title">Federal Reserve Signals Extended Pause on Rate Cuts Amid Tariff Uncertainty</div>
+          <div class="hl-meta">
+            <span class="hl-source-count">24 articles · 15 sources</span>
+            <span class="hl-divider"></span>
+            <span class="hl-impact">Impact <strong>85</strong></span>
+          </div>
+        </div>
+
+        <div class="headline-card world">
+          <div class="hl-cat">World & Security</div>
+          <div class="hl-title">US-Iran Nuclear Negotiations Resume With Israeli Pressure Mounting</div>
+          <div class="hl-meta">
+            <span class="hl-source-count">18 articles · 12 sources</span>
+            <span class="hl-divider"></span>
+            <span class="hl-impact">Impact <strong>82</strong></span>
+            <span class="hl-divider"></span>
+            <span class="hl-trend divergent">High framing divergence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HERO — TAGLINE + STATS ═══════════ -->
+<section class="hero-main">
+  <div class="hero-main-inner">
+    <h1>Same event.<br><em>Different realities.</em></h1>
+    <p class="hero-subtitle">We track how outlets across the political spectrum frame the same subjects, score what matters, and surface what's being overlooked.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">46</div>
+        <div class="hero-stat-label">Topics Analyzed</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">477</div>
+        <div class="hero-stat-label">Articles Collected</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">100+</div>
+        <div class="hero-stat-label">Sources Monitored</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ COVERAGE + NAVIGATION ═══════════ -->
+<section class="coverage-section">
+  <div class="coverage-inner">
+
+    <!-- Left: Narrative + links -->
+    <div class="coverage-narrative">
+      <span class="coverage-label">The Coverage Gap</span>
+      <h2 class="coverage-headline">What's important vs.<br>what gets covered</h2>
+      <p class="coverage-desc">Every topic is scored for real-world impact and measured against actual media coverage. The gap between the two reveals what's being overlooked.</p>
+      <div class="coverage-links">
+        <a href="#" class="coverage-btn primary">
+          <strong>How It Works</strong>
+          <span>Our 9-stage AI pipeline, explained</span>
+        </a>
+        <a href="#" class="coverage-btn secondary">
+          <strong>Archive</strong>
+          <span>Browse every topic we've analyzed</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: Chart -->
+    <div class="coverage-chart">
+      <div class="chart-header">
+        <span class="chart-title">Coverage Breakdown</span>
+        <div class="chart-legend">
+          <span class="chart-legend-item"><span class="legend-swatch impact"></span> Estimated Impact</span>
+          <span class="chart-legend-item"><span class="legend-swatch coverage"></span> Observed Coverage</span>
+        </div>
+      </div>
+      <div class="chart-rows">
+        <div class="chart-row">
+          <span class="chart-cat"><span class="chart-dot" style="background:var(--cat-politics)"></span>Politics & Law</span>
+          <div class="chart-bars">
+            <div class="chart-bar-track"><div class="chart-bar impact" style="width:38%"><span>38</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar coverage" style="width:17%"><span>17</span></div></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <span class="chart-cat"><span class="chart-dot" style="background:var(--cat-world)"></span>World & Security</span>
+          <div class="chart-bars">
+            <div class="chart-bar-track"><div class="chart-bar impact" style="width:48%"><span>48</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar coverage" style="width:18%"><span>18</span></div></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <span class="chart-cat"><span class="chart-dot" style="background:var(--cat-economy)"></span>Economy & Business</span>
+          <div class="chart-bars">
+            <div class="chart-bar-track"><div class="chart-bar impact" style="width:33%"><span>33</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar coverage" style="width:13%"><span>13</span></div></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <span class="chart-cat"><span class="chart-dot" style="background:var(--cat-science)"></span>Science & Health</span>
+          <div class="chart-bars">
+            <div class="chart-bar-track"><div class="chart-bar impact" style="width:26%"><span>26</span></div></div>
+            <div class="chart-bar-track"><div class="chart-bar coverage" style="width:12%"><span>12</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TABS (sticky) -->
+<div class="tabs-section">
+  <div class="tabs">
+    <button class="tab active">All</button>
+    <button class="tab">Politics & Law</button>
+    <button class="tab">World & Security</button>
+    <button class="tab">Economy & Business</button>
+    <button class="tab">Science & Health</button>
+  </div>
+</div>
+
+<!-- INSIGHTS BAR (ticker style) -->
+<div class="insights-bar">
+  <div class="insights-bar-inner">
+    <div class="insight-item">
+      <span class="insight-tag under">Undercovered</span>
+      <span class="insight-desc">Science & Health topics show the widest coverage gap this week</span>
+    </div>
+    <span class="insight-sep">·</span>
+    <div class="insight-item">
+      <span class="insight-tag surge">Surging</span>
+      <span class="insight-desc">Economy & Business coverage up significantly in the last 48 hours</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOPICS LIST -->
+<div class="topics-section">
+  <div class="topic-card world">
+    <div class="topic-left">
+      <div class="topic-meta">
+        <span class="topic-badge world">World</span>
+        <span class="topic-articles">38 articles</span>
+      </div>
+      <div class="topic-title">Trump Administration Freezes Foreign Aid Pending Policy Review</div>
+    </div>
+    <div class="topic-scores">
+      <div class="topic-score">
+        <div class="topic-score-val">94</div>
+        <div class="topic-score-label">Impact</div>
+      </div>
+      <div class="topic-score">
+        <div class="topic-score-val">78</div>
+        <div class="topic-score-label">Coverage</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic-card politics">
+    <div class="topic-left">
+      <div class="topic-meta">
+        <span class="topic-badge politics">Politics</span>
+        <span class="topic-articles">29 articles</span>
+      </div>
+      <div class="topic-title">Senate Confirms Kash Patel as FBI Director in Party-Line Vote</div>
+    </div>
+    <div class="topic-scores">
+      <div class="topic-score">
+        <div class="topic-score-val">88</div>
+        <div class="topic-score-label">Impact</div>
+      </div>
+      <div class="topic-score">
+        <div class="topic-score-val">72</div>
+        <div class="topic-score-label">Coverage</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic-card economy">
+    <div class="topic-left">
+      <div class="topic-meta">
+        <span class="topic-badge economy">Economy</span>
+        <span class="topic-articles">24 articles</span>
+      </div>
+      <div class="topic-title">Federal Reserve Signals Extended Pause on Rate Cuts</div>
+    </div>
+    <div class="topic-scores">
+      <div class="topic-score">
+        <div class="topic-score-val">85</div>
+        <div class="topic-score-label">Impact</div>
+      </div>
+      <div class="topic-score">
+        <div class="topic-score-val">68</div>
+        <div class="topic-score-label">Coverage</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic-card science">
+    <div class="topic-left">
+      <div class="topic-meta">
+        <span class="topic-badge science">Science</span>
+        <span class="topic-articles">11 articles</span>
+      </div>
+      <div class="topic-title">FDA Fast-Tracks New Alzheimer's Drug Amid Safety Debate</div>
+    </div>
+    <div class="topic-scores">
+      <div class="topic-score">
+        <div class="topic-score-val">71</div>
+        <div class="topic-score-label">Impact</div>
+      </div>
+      <div class="topic-score">
+        <div class="topic-score-val">32</div>
+        <div class="topic-score-label">Coverage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 ClearSignal — Tracking media coverage across the political spectrum.</p>
+</footer>
+
+</body>
+</html>

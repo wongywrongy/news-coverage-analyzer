@@ -44,12 +44,13 @@ BANNER = r"""
 """
 
 STAGES = {
-    "ingest":  "Fetch, normalize, deduplicate, embed, store",
-    "cluster": "Assign, discover, split, label, rename, merge",
-    "score":   "Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights",
-    "select":  "GPT-4o-mini editorial selection for analysis",
-    "scrape":  "Extract article bodies via trafilatura",
-    "analyze": "Generate Claude-powered neutral analyses",
+    "ingest":   "Fetch, normalize, deduplicate, embed, store",
+    "cluster":  "Assign, discover, split, label, rename, merge, validate",
+    "validate": "Filter non-current topics (historical, evergreen)",
+    "score":    "Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights",
+    "select":   "GPT-4o-mini editorial selection for analysis",
+    "scrape":   "Extract article bodies via trafilatura",
+    "analyze":  "Generate Claude-powered neutral analyses",
 }
 
 
@@ -111,6 +112,20 @@ def stage_cluster() -> None:
     _print_done(time.time() - t0)
 
 
+def stage_validate() -> None:
+    """Run the validate stage (standalone, outside of cluster)."""
+    _print_stage_header("Validate", STAGES["validate"])
+    t0 = time.time()
+    from clustering.validate import validate_topics
+    result = validate_topics()
+    console.print(
+        f"  Validated: {result['validated']}, "
+        f"Rejected: {result['rejected']}, "
+        f"Accepted: {result['accepted']}"
+    )
+    _print_done(time.time() - t0)
+
+
 def stage_score() -> None:
     """Run the score stage."""
     _print_stage_header("Score", STAGES["score"])
@@ -145,12 +160,13 @@ def stage_analyze() -> None:
 
 
 STAGE_RUNNERS = {
-    "ingest":  stage_ingest,
-    "cluster": stage_cluster,
-    "score":   stage_score,
-    "select":  stage_select,
-    "scrape":  stage_scrape,
-    "analyze": stage_analyze,
+    "ingest":   stage_ingest,
+    "cluster":  stage_cluster,
+    "validate": stage_validate,
+    "score":    stage_score,
+    "select":   stage_select,
+    "scrape":   stage_scrape,
+    "analyze":  stage_analyze,
 }
 
 
@@ -275,7 +291,8 @@ def main() -> None:
         epilog=(
             "stages:\n"
             "  ingest    Fetch, normalize, deduplicate, embed, store\n"
-            "  cluster   Assign, discover, split, label, rename, merge\n"
+            "  cluster   Assign, discover, split, label, rename, merge, validate\n"
+            "  validate  Filter non-current topics (standalone)\n"
             "  score     Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights\n"
             "  select    GPT-4o-mini editorial selection for analysis\n"
             "  scrape    Extract article bodies via trafilatura\n"

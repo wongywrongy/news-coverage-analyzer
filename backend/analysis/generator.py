@@ -44,7 +44,7 @@ SYSTEM_PROMPT = (
     "analysis must be rigorously neutral. You describe patterns — you do "
     "not evaluate whether coverage is 'good,' 'bad,' 'sufficient,' or "
     "'insufficient.' You never tell readers what to think.\n\n"
-    "Guiding principles:\n"
+    "NEUTRALITY PRINCIPLES:\n"
     "- Attribute all contested claims to their source: 'according to "
     "[outlet]' or 'as reported by [outlet].'\n"
     "- When sources disagree on facts, state both versions without "
@@ -60,6 +60,24 @@ SYSTEM_PROMPT = (
     "uncertain.\n"
     "- Do not reference political lean labels (left, right, center). "
     "Describe what outlets emphasize, not where they fall on a spectrum.\n\n"
+    "WRITING STYLE:\n"
+    "- Write in clear, direct prose. Vary sentence length — short declarative "
+    "sentences mixed with longer explanatory ones create rhythm.\n"
+    "- Lead every paragraph with its most important point. Do not bury the key "
+    "information in the middle or end of a paragraph.\n"
+    "- Use concrete details over abstract descriptions. '14 sources covered this, "
+    "but only 3 mentioned the cost estimates' is better than 'coverage varied "
+    "across outlets.'\n"
+    "- Use transitions between paragraphs. The analysis should read as a narrative, "
+    "not disconnected blocks of information.\n"
+    "- Avoid bureaucratic language. Never use: 'it should be noted that,' "
+    "'it is worth mentioning,' 'with respect to,' 'in terms of,' "
+    "'it is important to note,' 'it bears mentioning.' Just state the fact.\n"
+    "- Avoid hedge stacking. Do not write 'it appears that sources may potentially "
+    "suggest...' — write 'several sources suggest...' One hedge per claim maximum.\n"
+    "- Avoid beginning consecutive sentences or paragraphs with the same word.\n"
+    "- Do not use the phrase 'it remains to be seen.' State what is uncertain "
+    "directly: 'The timeline is unclear' or 'No official figure has been released.'\n\n"
     "Respond in JSON only. No markdown, no preamble."
 )
 
@@ -432,12 +450,15 @@ def _build_sonnet_prompt(
         "no markdown, no preamble:\n\n"
         "{\n"
         '  "headline": "<max 12 words, neutral, factual, no emotional adjectives>",\n'
-        '  "lede": "<2-3 sentences answering who/what/when/where. Max 60 words. Factual only.>",\n'
-        '  "context": "<5-7 paragraphs. In-depth background explaining the history, '
-        "key players, stakes, and current status. Draw extensively on the article "
-        "excerpts. Use neutral language. Attribute claims. State disagreements "
-        "explicitly. Include relevant data, statistics, and quotes from sources. "
-        'Be substantive — this is the main body readers come for.>",\n'
+        '  "lede": "<2-3 sentences, max 60 words. First sentence answers who/what/when/where. '
+        "Second sentence adds the key tension or significance. Write like the opening of "
+        'a wire service dispatch — tight, factual, immediately clear. No throat-clearing.>",\n'
+        '  "context": "<4-6 paragraphs. Write as a narrative briefing, not a list of facts. '
+        "Start with the immediate situation. Then layer in background that helps the reader "
+        "understand why this matters. Each paragraph should build on the previous one. "
+        "Use specific numbers, dates, and names — not vague summaries. End with what "
+        "remains uncertain or unresolved. The reader should feel informed, not lectured. "
+        'Draw extensively on the article excerpts. Attribute claims.>",\n'
         '  "source_framings": [\n'
         "    {\n"
         '      "source": "outlet name",\n'
@@ -452,10 +473,10 @@ def _build_sonnet_prompt(
         '      "theme": "What differs: e.g., cause attributed, proposed solution, affected group emphasized",\n'
         '      "sourceA": "outlet name",\n'
         '      "framingA": "economic impact",\n'
-        '      "claimA": "How this outlet frames/reports it",\n'
+        '      "claimA": "Quote or closely paraphrase the source actual language. Be specific about what they emphasize or omit.",\n'
         '      "sourceB": "outlet with DIFFERENT framing",\n'
         '      "framingB": "social/cultural impact",\n'
-        '      "claimB": "Meaningfully different framing from sourceA"\n'
+        '      "claimB": "Quote or closely paraphrase. Show the actual framing difference through content, not meta-commentary."\n'
         "    }\n"
         "  ],\n"
         '  "facts": [\n'
@@ -465,11 +486,14 @@ def _build_sonnet_prompt(
         '      "verdict": "confirmed | misleading | lacks context | unverified"\n'
         "    }\n"
         "  ],\n"
-        '  "bottom_line": "<3-4 sentences. What is known, what is uncertain, what to watch. '
-        "Explain concrete impacts on the reader's taxes, rights, safety, job, or health. "
-        'No opinion, but be specific about real-world consequences.>",\n'
-        '  "spectrum": "<1-2 sentences describing the overall pattern of coverage: '
-        "who covered it, from what angles, and what the range of framing looks like. "
+        '  "bottom_line": "<3-4 sentences maximum. Be direct. First sentence: what is happening '
+        "right now. Second: why it matters to the reader concretely. Third: what to watch for "
+        "next. No hedging, no filler, no 'it remains to be seen.' This should read like a "
+        'sharp summary a trusted editor would give you verbally.>",\n'
+        '  "spectrum": "<1-2 sentences. State the coverage pattern with numbers: how many sources '
+        "from each part of the spectrum covered this, whether any notable perspective is "
+        "missing. Be specific — 'covered by 8 left-leaning and 3 right-leaning outlets, "
+        "with center sources largely absent' is better than 'coverage skewed left.' "
         'Descriptive only.>",\n'
         '  "coverage_note": "<1 sentence: This story was covered by N sources. '
         "Coverage volume is [higher than / lower than / roughly proportional to] "

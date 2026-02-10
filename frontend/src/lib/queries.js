@@ -311,6 +311,76 @@ export async function getCategorySummary() {
   }
 }
 
+/**
+ * Top 4 headline stories with analysis lede for the Headlines section.
+ * Joins stories + analyses; filters high-impact, well-covered, analyzed stories.
+ */
+export async function getHeadlineStories() {
+  try {
+    // 30-day rolling window
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+    const sinceISO = since.toISOString();
+
+    const { data: stories, error: sErr } = await supabase
+      .from('stories')
+      .select('id, topic, category, impact_score, article_count, source_count, trend, bias_spread, rank_score, first_seen, created_at')
+      .eq('active', true)
+      .gte('impact_score', 75)
+      .gte('article_count', 15)
+      .order('rank_score', { ascending: false })
+      .limit(20);
+
+    if (sErr || !stories || stories.length === 0) return [];
+
+    // Filter to 30-day window
+    const sinceMs = since.getTime();
+    const recent = stories.filter(s => {
+      const ts = s.first_seen || s.created_at;
+      return ts && new Date(ts).getTime() >= sinceMs;
+    });
+
+    if (recent.length === 0) return [];
+
+    // Fetch analyses for these stories
+    const ids = recent.map(s => s.id);
+    const { data: analyses, error: aErr } = await supabase
+      .from('analyses')
+      .select('story_id, headline, lede')
+      .in('story_id', ids)
+      .not('headline', 'is', null);
+
+    if (aErr || !analyses || analyses.length === 0) return [];
+
+    // Map story_id → latest analysis
+    const analysisMap = {};
+    for (const a of analyses) {
+      analysisMap[a.story_id] = a;
+    }
+
+    // Only keep stories that have an analysis
+    const withAnalysis = recent
+      .filter(s => analysisMap[s.id])
+      .map(s => ({
+        id: s.id,
+        topic: s.topic,
+        category: s.category,
+        impact_score: s.impact_score,
+        article_count: s.article_count,
+        source_count: s.source_count,
+        trend: s.trend,
+        bias_spread: s.bias_spread,
+        headline: analysisMap[s.id].headline,
+        lede: analysisMap[s.id].lede,
+      }));
+
+    return withAnalysis.slice(0, 4);
+  } catch (e) {
+    console.error('getHeadlineStories exception:', e);
+    return [];
+  }
+}
+
 const TOPICS_PER_CATEGORY = 8;
 
 export async function getArchiveStories() {

@@ -22,15 +22,17 @@ python -m venv .venv
 .venv/Scripts/activate        # Windows ssss
 pip install -r requirements.txt
 
-# Full pipeline (ingest → cluster → score → scrape → analyze)
+# Full pipeline (ingest → cluster → score → select → scrape → analyze)
 python -m pipeline.main
 
 # Run individual stages
 python -m pipeline.main ingest           # fetch + normalize + embed + store
-python -m pipeline.main cluster          # assign articles → stories
-python -m pipeline.main score            # impact + attention + gaps
+python -m pipeline.main cluster          # assign, discover, split, label, rename, merge, validate
+python -m pipeline.main validate         # filter non-current topics (standalone)
+python -m pipeline.main score            # impact, coverage, attention, sentiment, timeline, gaps, ranking, insights
+python -m pipeline.main select           # GPT-4o-mini editorial selection
 python -m pipeline.main scrape           # extract article bodies
-python -m pipeline.main analyze          # generate Claude analyses
+python -m pipeline.main analyze          # framing + Claude AP-style analyses
 
 # Daemon mode (full pipeline on schedule, default 15min)
 python -m pipeline.main --daemon
@@ -104,11 +106,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
-| `pipeline/main.py` | CLI entry point — single run, continuous mode, dry-run |
+| `pipeline/main.py` | CLI entry point — single run, daemon mode, dry-run |
 | `pipeline/ingest.py` | Orchestrates fetch, normalize, deduplicate, embed, store |
 | `pipeline/process.py` | Orchestrates clustering, scoring, analysis sequencing |
-| `pipeline/poc_analysis.py` | PoC analysis for 10 hand-picked stories |
-| `pipeline/cleanup.py` | One-time fix for stale scores and bad labels |
+| `pipeline/select.py` | GPT-4o-mini editorial selection — picks stories for Claude analysis |
 
 **Ingestion**
 
@@ -118,8 +119,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 | `ingestion/googlenews.py` | Google News RSS decoder for protobuf URLs |
 | `ingestion/newsdata.py` | NewsData.io API fetcher by category |
 | `ingestion/scraper.py` | Article body extraction via trafilatura |
+| `ingestion/dedup.py` | URL-based deduplication before storing |
 | `ingestion/embed.py` | 384-dim embeddings via OpenAI or local sentence-transformers |
 | `ingestion/normalize.py` | RawArticle to Article conversion with domain/bias lookup |
+
+**Clustering**
+
+| File | Purpose |
+|------|---------|
+| `clustering/assign.py` | Fast-path: assign unassigned articles to existing stories by embedding similarity |
+| `clustering/discover.py` | HDBSCAN clustering to discover new story clusters from remaining articles |
+| `clustering/split.py` | Split oversized stories into finer-grained sub-stories |
+| `clustering/label.py` | Claude Haiku generates topic labels for unlabeled stories |
+| `clustering/merge.py` | Merge stories that have become too similar after growth |
+| `clustering/validate.py` | Filter non-current topics (historical, evergreen) via keyword + GPT-4o-mini |
 
 **Analysis**
 
@@ -127,15 +140,22 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 |------|---------|
 | `analysis/generator.py` | Claude Sonnet AP-style analysis with contrasts + fact checks |
 | `analysis/staleness.py` | Determines which stories need new/updated analyses |
-| `analysis/framing.py` | Per-article editorial framing classification via Claude Haiku |
+| `analysis/framing.py` | Per-article editorial framing classification via Claude Haiku (7 categories) |
 | `analysis/headlines.py` | Rewrites vague cluster headlines into specific neutral ones |
 
 **Scoring**
 
 | File | Purpose |
 |------|---------|
-| `scoring/impact.py` | 0-100 real-world significance score (5 weighted factors) |
-| `scoring/gaps.py` | Coverage gap detection — significance vs attention comparison |
+| `scoring/impact.py` | 0-100 real-world significance score via Claude Haiku (5 weighted factors) |
+| `scoring/coverage.py` | 0-100 coverage score from article volume, source diversity, recency, velocity |
+| `scoring/attention.py` | 0-100 media attention score — percentile-ranked article/source/bias breadth |
+| `scoring/sentiment.py` | VADER sentiment analysis on headlines, grouped by left/center/right lean |
+| `scoring/timeline.py` | Daily article-count trends, peak date, lifecycle status (breaking → stale) |
+| `scoring/trends.py` | Trend computation from story_daily_counts table |
+| `scoring/gaps.py` | Coverage gap detection — significance vs coverage comparison |
+| `scoring/ranking.py` | Homepage rank score (0-100) from impact, coverage, velocity, recency, framing |
+| `scoring/insights.py` | Category-level gap + surge detection for the frontend insights bar |
 
 **Config & Data**
 
@@ -151,8 +171,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
-| `scripts/backfill_analyses.py` | Generate analyses for all scored stories missing one |
-| `scripts/scrape_backfill.py` | Backfill article bodies with rate limiting |
-| `scripts/filter_topics.py` | GPT-4o-mini significance scoring and topic renaming |
-| `scripts/backfill_time_metadata.py` | Backfill first_seen, last_article_at, status from timestamps |
-| `scripts/migrate_headlines.py` | Fix truncated/vague/long headlines using Claude Haiku (dry run by default) |
+| `scripts/backfill_analyses.py` | Generate Claude analyses for stories missing one |
+| `scripts/scrape_backfill.py` | Backfill article bodies via trafilatura |
+| `scripts/filter_topics.py` | GPT-4o-mini significance scoring, coherence check, topic renaming |
+| `scripts/backfill_time_metadata.py` | Populate first_seen, last_article_at, status, velocity |
+| `scripts/backfill_coverage.py` | Compute coverage_score from article count, diversity, recency |
+| `scripts/backfill_daily_counts.py` | Populate story_daily_counts from article publish dates |
+| `scripts/backfill_categories.py` | Categorize stories via keyword matching + Claude fallback |
+| `scripts/migrate_headlines.py` | Fix truncated/vague headlines using Claude Haiku (dry run default) |

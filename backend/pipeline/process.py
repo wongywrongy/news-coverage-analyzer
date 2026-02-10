@@ -6,7 +6,7 @@ and prints a summary.
 Full pipeline order:
     INGEST -> CLUSTER -> SCORE -> SELECT -> SCRAPE -> ANALYZE
 
-    Clustering: assign -> discover -> split -> label -> rename headlines -> merge
+    Clustering: assign -> discover -> split -> label -> rename headlines -> merge -> validate
     Scoring:    impact -> outliers -> attention -> coverage -> sentiment ->
                 timeline -> gaps -> ranking -> insights -> deactivate stale
     Analysis:   staleness check -> framing classification -> generate -> store
@@ -74,9 +74,13 @@ def run_clustering() -> dict:
     # 5. Merge converged stories
     merge_result = merge_similar_stories()
 
-    # 6. Summary
+    # 6. Validate topics — deactivate historical/evergreen/non-news
+    from clustering.validate import validate_topics
+    validate_result = validate_topics()
+
+    # 7. Summary
     active_stories = db.get_active_stories()
-    _print_summary(assign_result, discover_result, split_result, merge_result, len(active_stories))
+    _print_summary(assign_result, discover_result, split_result, merge_result, validate_result, len(active_stories))
 
     combined = {
         "assign": assign_result,
@@ -85,17 +89,21 @@ def run_clustering() -> dict:
         "label": label_result,
         "rename": rename_result,
         "merge": merge_result,
+        "validate": validate_result,
         "active_stories": len(active_stories),
     }
 
     logger.info(
-        "Clustering complete: %d assigned, %d new clusters, %d split, %d labeled, %d renamed, %d merged, %d active.",
+        "Clustering complete: %d assigned, %d new clusters, %d split, %d labeled, "
+        "%d renamed, %d merged, %d validated (%d rejected), %d active.",
         assign_result["assigned"],
         discover_result["clusters_found"],
         split_result["stories_split"],
         label_result["labeled"],
         rename_result["renamed"],
         merge_result["merges_performed"],
+        validate_result["validated"],
+        validate_result["rejected"],
         len(active_stories),
     )
 
@@ -103,7 +111,7 @@ def run_clustering() -> dict:
 
 
 def _print_summary(
-    assign: dict, discover: dict, split: dict, merge: dict, active_total: int
+    assign: dict, discover: dict, split: dict, merge: dict, validate: dict, active_total: int
 ) -> None:
     """Print a rich summary panel."""
     noise = discover["articles_noise"] + assign["unassigned"] - discover["articles_clustered"]
@@ -121,6 +129,11 @@ def _print_summary(
     lines.append(f"{noise} (noise)\n", style="bold")
     lines.append("Stories merged:                ", style="dim")
     lines.append(f"{merge['merges_performed']}\n", style="bold")
+    lines.append("Topics validated:              ", style="dim")
+    lines.append(f"{validate['validated']}", style="bold")
+    if validate["rejected"]:
+        lines.append(f" ({validate['rejected']} rejected)", style="bold red")
+    lines.append("\n")
     lines.append("Active stories total:          ", style="dim")
     lines.append(f"{active_total}", style="bold green")
 
