@@ -26,6 +26,7 @@ rich>=13.0
 
 # NLP
 nltk>=3.9
+trafilatura>=2.0
 
 # Utilities
 python-dateutil>=2.9

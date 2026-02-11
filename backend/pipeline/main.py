@@ -16,8 +16,10 @@ Usage:
 """
 
 import argparse
+import importlib
 import logging
 import signal
+import sys
 import threading
 import time
 from datetime import datetime, timezone
@@ -33,6 +35,41 @@ from pipeline.process import run_analysis, run_clustering, run_scoring, run_scra
 
 logger = logging.getLogger(__name__)
 console = Console()
+
+# ── Dependency check ──────────────────────────────────────────────────────
+
+REQUIRED_PACKAGES = [
+    ("httpx", "httpx"),
+    ("feedparser", "feedparser"),
+    ("supabase", "supabase"),
+    ("openai", "openai"),
+    ("anthropic", "anthropic"),
+    ("sentence_transformers", "sentence-transformers"),
+    ("hdbscan", "hdbscan"),
+    ("numpy", "numpy"),
+    ("sklearn", "scikit-learn"),
+    ("pydantic", "pydantic"),
+    ("pydantic_settings", "pydantic-settings"),
+    ("apscheduler", "apscheduler"),
+    ("rich", "rich"),
+    ("nltk", "nltk"),
+    ("trafilatura", "trafilatura"),
+]
+
+
+def check_dependencies() -> None:
+    """Verify all required packages are importable before running the pipeline."""
+    missing = []
+    for module_name, pip_name in REQUIRED_PACKAGES:
+        try:
+            importlib.import_module(module_name)
+        except ImportError:
+            missing.append(pip_name)
+
+    if missing:
+        console.print(f"\n[bold red]Missing dependencies:[/bold red] {', '.join(missing)}")
+        console.print(f"[dim]Run:[/dim] pip install {' '.join(missing)}")
+        sys.exit(1)
 
 BANNER = r"""
    ___  _                  ___  _                    _
@@ -344,6 +381,9 @@ def main() -> None:
             show_path=False,
         )],
     )
+
+    # ── Dependency check ────────────────────────────────────────────────
+    check_dependencies()
 
     # ── Dispatch ────────────────────────────────────────────────────────
     if args.daemon:

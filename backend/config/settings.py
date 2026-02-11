@@ -38,9 +38,10 @@ class Settings(BaseSettings):
     # ── Analysis ─────────────────────────────────────────
     analysis_batch_size: int = 10
     min_significance_score: int = 45
-    max_analysis_tokens: int = 5000
+    max_analysis_tokens: int = 8000
     openai_model: str = "gpt-4o-mini"
     claude_model: str = "claude-sonnet-4-20250514"
+    current_analysis_version: int = 2
 
     # ── Editorial selection ────────────────────────────
     max_stories_per_analysis_cycle: int = 8

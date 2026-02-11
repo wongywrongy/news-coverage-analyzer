@@ -456,7 +456,7 @@ def get_analysis(story_id: int) -> dict | None:
             return None
         row = rows[0]
         # JSON array fields may come back as strings if column is TEXT
-        for field in ("contrasts", "facts", "source_framings"):
+        for field in ("contrasts", "facts", "source_framings", "body"):
             val = row.get(field)
             if isinstance(val, str):
                 try:

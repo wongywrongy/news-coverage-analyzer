@@ -104,6 +104,7 @@ class Analysis(BaseModel):
     headline: str = ""
     dateline: str = ""
     lede: str = ""
+    body: list[dict] = Field(default_factory=list)
     context: str = ""
     source_framings: list[dict] = Field(default_factory=list)
     contrasts: list[dict] = Field(default_factory=list)
@@ -114,6 +115,7 @@ class Analysis(BaseModel):
     framing_check: str = ""
     generated_at: datetime | None = None
     article_count_at_gen: int = 0
+    analysis_version: int = 1
 
 
 # ── Ingestion Result ─────────────────────────────────────────────────────────

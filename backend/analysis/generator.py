@@ -78,6 +78,42 @@ SYSTEM_PROMPT = (
     "- Avoid beginning consecutive sentences or paragraphs with the same word.\n"
     "- Do not use the phrase 'it remains to be seen.' State what is uncertain "
     "directly: 'The timeline is unclear' or 'No official figure has been released.'\n\n"
+    "ARTICLE BODY RULES:\n"
+    "- Do not use section headers, labels, or dividers within the body. "
+    "It should read as one continuous piece.\n"
+    "- Do not begin a paragraph with 'It is worth noting' or 'Notably' or "
+    "'Importantly' — just state the point.\n"
+    "- Integrate agreed facts into the narrative naturally. Never present "
+    "them as a bullet list.\n"
+    "- The final paragraph should be direct and forward-looking. No "
+    "'In conclusion' or 'Overall' or 'To summarize.'\n"
+    "- Each paragraph should advance the reader's understanding. No paragraph "
+    "should merely restate what was already said.\n"
+    "- Aim for 800-1200 words total across all text blocks.\n\n"
+    "FRAMING COMPARISON RULES:\n"
+    "Each framing block must represent a GENUINE editorial difference — not "
+    "just different wording of the same point.\n\n"
+    "For claimA and claimB:\n"
+    "- Use direct quotes or very close paraphrases from the actual article "
+    "text. Do not invent or extrapolate.\n"
+    "- Both claims must be about the SAME specific aspect of the story. Do "
+    "not compare Source A's take on the timeline against Source B's take on "
+    "the economic impact.\n"
+    "- The claim should be self-explanatory. A reader should understand the "
+    "framing difference from reading the two claims side by side.\n"
+    "- Do not include meta-commentary in the claim. Wrong: 'Source A takes "
+    "an alarmist tone by saying...' Right: Just include what Source A said.\n"
+    "- If a source's framing is notable for what it OMITS, say so in the "
+    "surrounding text paragraph, not in the claim itself.\n\n"
+    "Quality check before including a framing block:\n"
+    "1. Are both claims about the same specific aspect? If no, don't include it.\n"
+    "2. Would a reader see a meaningful difference? If no, don't include it.\n"
+    "3. Are both claims grounded in actual article text? If no, don't include it.\n"
+    "4. Does this contrast reveal something about editorial priorities? "
+    "If no, don't include it.\n\n"
+    "Include 1-3 framing blocks per article. Quality over quantity. If sources "
+    "genuinely agree on everything, say so in the prose and include zero "
+    "framing blocks.\n\n"
     "Respond in JSON only. No markdown, no preamble."
 )
 
@@ -87,7 +123,7 @@ SYSTEM_PROMPT = (
 
 def generate_analyses(
     story_ids: list[int] | None = None,
-    max_per_cycle: int = 5,
+    max_per_cycle: int = 10,
     force: bool = False,
 ) -> dict:
     """Generate neutral analyses for stories that need them.
@@ -152,21 +188,34 @@ def generate_analyses(
             continue
 
         spectrum = parsed.get("spectrum", "")
-        coverage_note = parsed.get("coverage_note", "") or spectrum
+        body = parsed.get("body", [])
+
+        # Extract contrasts from body for backward compat DB storage
+        contrasts = [b for b in body if isinstance(b, dict) and b.get("type") == "framing"]
+
+        # Build context string from text blocks for backward compat
+        text_blocks = [b.get("content", "") for b in body if isinstance(b, dict) and b.get("type") == "text"]
+        context_str = "\n\n".join(text_blocks)
+
+        # Bottom line is the last text block
+        bottom_line = text_blocks[-1] if text_blocks else ""
+
         analysis_data = {
             "story_id": story_id,
             "headline": parsed.get("headline", ""),
             "dateline": parsed.get("dateline", ""),
             "lede": parsed.get("lede", ""),
-            "context": parsed.get("context", ""),
+            "body": body,
+            "context": context_str,
             "source_framings": parsed.get("source_framings", []),
-            "contrasts": parsed.get("contrasts", []),
+            "contrasts": contrasts,
             "facts": parsed.get("facts", []),
-            "bottom_line": parsed.get("bottom_line", ""),
+            "bottom_line": bottom_line,
             "spectrum": spectrum,
-            "coverage_note": coverage_note,
+            "coverage_note": spectrum,
             "framing_check": parsed.get("framing_check", ""),
             "article_count_at_gen": story.get("article_count") or len(articles),
+            "analysis_version": settings.current_analysis_version,
         }
 
         upsert_analysis(analysis_data)
@@ -449,16 +498,33 @@ def _build_sonnet_prompt(
         + "Produce the following fields. Respond ONLY with valid JSON, "
         "no markdown, no preamble:\n\n"
         "{\n"
-        '  "headline": "<max 12 words, neutral, factual, no emotional adjectives>",\n'
+        '  "headline": "<max 12 words, neutral, factual, no emotional adjectives>",\n\n'
         '  "lede": "<2-3 sentences, max 60 words. First sentence answers who/what/when/where. '
         "Second sentence adds the key tension or significance. Write like the opening of "
-        'a wire service dispatch — tight, factual, immediately clear. No throat-clearing.>",\n'
-        '  "context": "<4-6 paragraphs. Write as a narrative briefing, not a list of facts. '
-        "Start with the immediate situation. Then layer in background that helps the reader "
-        "understand why this matters. Each paragraph should build on the previous one. "
-        "Use specific numbers, dates, and names — not vague summaries. End with what "
-        "remains uncertain or unresolved. The reader should feel informed, not lectured. "
-        'Draw extensively on the article excerpts. Attribute claims.>",\n'
+        'a wire service dispatch — tight, factual, immediately clear. No throat-clearing.>",\n\n'
+        '  "body": [\n'
+        "    An array of blocks that form a single flowing article. Each block is either:\n"
+        '    {"type": "text", "content": "paragraph"} — a prose paragraph\n'
+        '    {"type": "framing", "sourceA": "outlet", "framingA": "category", '
+        '"claimA": "quote or close paraphrase", "sourceB": "outlet", '
+        '"framingB": "category", "claimB": "quote or close paraphrase"} '
+        "— a framing comparison\n\n"
+        "    Write the body as a cohesive editorial article, 6-10 blocks total:\n"
+        "    1. OPEN with the situation — what is happening, what is at stake (1-2 text blocks)\n"
+        "    2. STATE what sources agree on — weave agreed facts naturally into the prose, "
+        "do not use bullet points or a separate section\n"
+        "    3. INTRODUCE the framing divergence — explain WHERE sources disagree, "
+        "then SHOW it with a framing block. The text paragraph BEFORE a framing block "
+        "should set up what the reader is about to see. The text paragraph AFTER should "
+        "analyze what the contrast reveals.\n"
+        "    4. CONTINUE with additional framing comparisons as needed (1-3 total framing "
+        "blocks woven throughout)\n"
+        "    5. CLOSE with the bottom line as the final text block — what is known, what "
+        "is uncertain, what to watch next. Do not label it as a 'bottom line' or 'summary.' "
+        "It should read as the natural conclusion of the article.\n\n"
+        "    The framing blocks are inline evidence — they should feel like pull quotes "
+        "that illustrate the point being made in the surrounding prose.\n"
+        "  ],\n\n"
         '  "source_framings": [\n'
         "    {\n"
         '      "source": "outlet name",\n'
@@ -467,46 +533,21 @@ def _build_sonnet_prompt(
         '      "notable_inclusions": "Facts/angles present here but absent from others, or none identified",\n'
         '      "notable_omissions": "Facts/angles in other articles but absent here, or none identified"\n'
         "    }\n"
-        "  ],\n"
-        '  "contrasts": [\n'
-        "    {\n"
-        '      "theme": "What differs: e.g., cause attributed, proposed solution, affected group emphasized",\n'
-        '      "sourceA": "outlet name",\n'
-        '      "framingA": "economic impact",\n'
-        '      "claimA": "Quote or closely paraphrase the source actual language. Be specific about what they emphasize or omit.",\n'
-        '      "sourceB": "outlet with DIFFERENT framing",\n'
-        '      "framingB": "social/cultural impact",\n'
-        '      "claimB": "Quote or closely paraphrase. Show the actual framing difference through content, not meta-commentary."\n'
-        "    }\n"
-        "  ],\n"
-        '  "facts": [\n'
-        "    {\n"
-        '      "claim": "A specific factual claim from coverage",\n'
-        '      "reality": "What verifiable facts show",\n'
-        '      "verdict": "confirmed | misleading | lacks context | unverified"\n'
-        "    }\n"
-        "  ],\n"
-        '  "bottom_line": "<3-4 sentences maximum. Be direct. First sentence: what is happening '
-        "right now. Second: why it matters to the reader concretely. Third: what to watch for "
-        "next. No hedging, no filler, no 'it remains to be seen.' This should read like a "
-        'sharp summary a trusted editor would give you verbally.>",\n'
+        "  ],\n\n"
         '  "spectrum": "<1-2 sentences. State the coverage pattern with numbers: how many sources '
         "from each part of the spectrum covered this, whether any notable perspective is "
         "missing. Be specific — 'covered by 8 left-leaning and 3 right-leaning outlets, "
         "with center sources largely absent' is better than 'coverage skewed left.' "
-        'Descriptive only.>",\n'
-        '  "coverage_note": "<1 sentence: This story was covered by N sources. '
-        "Coverage volume is [higher than / lower than / roughly proportional to] "
-        'estimated real-world impact. No editorializing beyond this.>",\n'
+        'Descriptive only.>",\n\n'
         '  "framing_check": "<Internal audit: what framing choices did you make, '
         "and what alternatives did you consider? For transparency logging, "
         'not user display.>"\n'
         "}\n\n"
         "IMPORTANT:\n"
         "- If all articles share the same framing and there are no meaningful "
-        'contrasts, return "contrasts": [] and note this in spectrum.\n'
-        "- If fewer than 3 articles are available, add to coverage_note: "
-        '"Based on limited source sample (N articles)."\n'
+        "contrasts, include zero framing blocks in body and note this in spectrum.\n"
+        "- If fewer than 3 articles are available, note in the body prose: "
+        "'Based on a limited source sample.'\n"
         "- Do not reference political lean labels (left, right, center). "
         "Describe what outlets emphasize, not where they fall on a spectrum."
     )
@@ -581,7 +622,7 @@ def _parse_response(raw: str) -> dict | None:
         return None
 
     # Validate required fields exist (use defaults for missing)
-    required = ("headline", "lede", "bottom_line")
+    required = ("headline", "lede", "body")
     missing = [f for f in required if not data.get(f)]
     if missing:
         logger.warning("Sonnet response missing key fields: %s", missing)

@@ -18,11 +18,11 @@ npm run lint         # ESLint check
 
 ```bash
 cd backend
-python -m venv .venv
-.venv/Scripts/activate        # Windows ssss
+python3 -m venv .venv
+source .venv/bin/activate     # macOS/Linux (.venv\Scripts\activate on Windows)
 pip install -r requirements.txt
 
-# Full pipeline (ingest → cluster → score → select → scrape → analyze)
+# Full pipeline (ingest -> cluster -> score -> select -> scrape -> analyze)
 python -m pipeline.main
 
 # Run individual stages
@@ -41,14 +41,6 @@ python -m pipeline.main --daemon --interval 30
 # Dry run (no DB writes)
 python -m pipeline.main --dry-run
 python -m pipeline.main ingest --dry-run
-
-# One-off scripts
-python -m scripts.backfill_analyses
-python -m scripts.scrape_backfilla
-python -m scripts.backfill_time_metadata
-python -m scripts.filter_topics
-python -m scripts.migrate_headlines              # dry run (preview headline fixes)
-python -m scripts.migrate_headlines --apply      # apply headline fixes
 ```
 
 ### Environment Variables
@@ -68,6 +60,72 @@ EMBEDDING_MODE=openai        # or "local"
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
+
+## Pipeline
+
+ClearSignal's pipeline processes news articles through 9 stages, from raw RSS ingestion to structured analysis.
+
+### Stages
+
+| Stage | What it does | AI Model |
+|-------|-------------|----------|
+| **Ingest** | Fetch RSS feeds, normalize URLs, deduplicate | None |
+| **Cluster** | Group articles by semantic similarity (HDBSCAN) | OpenAI embeddings |
+| **Label** | Generate neutral topic labels from headlines | Claude Haiku |
+| **Validate** | Filter out historical/non-current topics | GPT-4o-mini |
+| **Score** | Rate real-world impact using 5-factor model | Claude Haiku |
+| **Select** | Editorial triage — pick stories for deep analysis | GPT-4o-mini |
+| **Scrape** | Extract article body text from URLs | None |
+| **Frame** | Classify editorial framing per article | Claude Haiku |
+| **Analyze** | Generate full structured analysis | Claude Sonnet |
+
+### Re-running analyses
+
+When the analysis prompt is updated, re-generate all existing analyses:
+
+```bash
+cd backend
+
+# Preview what will be re-analyzed (dry run, no API calls)
+python -m scripts.reanalyze_all
+
+# Test on a small batch
+python -m scripts.reanalyze_all --execute --limit 3
+
+# Run the full batch
+python -m scripts.reanalyze_all --execute
+
+# Resume if interrupted
+python -m scripts.reanalyze_all --execute --resume
+
+# Custom delay between API calls (default 2s)
+python -m scripts.reanalyze_all --execute --delay 1.5
+```
+
+### Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ANALYSIS_BATCH_SIZE` | `10` | Max stories analyzed per pipeline run |
+| `SELECTION_ENABLED` | `True` | Use AI selection; `False` reverts to trigger-based logic |
+| `CURRENT_ANALYSIS_VERSION` | `2` | Increment when analysis prompt changes |
+| `MIN_SIGNIFICANCE_SCORE` | `45` | Minimum significance to qualify for analysis |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Model for validate + select stages |
+| `CLAUDE_MODEL` | `claude-sonnet-4-20250514` | Model for analysis generation |
+
+### Costs
+
+Typical pipeline cycle: **~$0.20-0.90** depending on how many stories are analyzed.
+
+| Stage | Model | Cost per cycle |
+|-------|-------|---------------|
+| Embed | OpenAI text-embedding-3-small | ~$0.01 |
+| Label | Claude Haiku | ~$0.02 |
+| Validate | GPT-4o-mini | ~$0.001 |
+| Score | Claude Haiku | ~$0.03 |
+| Select | GPT-4o-mini | ~$0.002 |
+| Frame | Claude Haiku | ~$0.05 |
+| Analyze (x10) | Claude Sonnet | ~$0.50-1.50 |
 
 ## Tech Stack
 
@@ -151,7 +209,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 | `scoring/coverage.py` | 0-100 coverage score from article volume, source diversity, recency, velocity |
 | `scoring/attention.py` | 0-100 media attention score — percentile-ranked article/source/bias breadth |
 | `scoring/sentiment.py` | VADER sentiment analysis on headlines, grouped by left/center/right lean |
-| `scoring/timeline.py` | Daily article-count trends, peak date, lifecycle status (breaking → stale) |
+| `scoring/timeline.py` | Daily article-count trends, peak date, lifecycle status (breaking -> stale) |
 | `scoring/trends.py` | Trend computation from story_daily_counts table |
 | `scoring/gaps.py` | Coverage gap detection — significance vs coverage comparison |
 | `scoring/ranking.py` | Homepage rank score (0-100) from impact, coverage, velocity, recency, framing |
@@ -171,6 +229,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 | File | Purpose |
 |------|---------|
+| `scripts/reanalyze_all.py` | Re-generate all analyses with updated prompt (dry run, --execute, --resume) |
 | `scripts/backfill_analyses.py` | Generate Claude analyses for stories missing one |
 | `scripts/scrape_backfill.py` | Backfill article bodies via trafilatura |
 | `scripts/filter_topics.py` | GPT-4o-mini significance scoring, coherence check, topic renaming |

@@ -388,7 +388,7 @@ def run_analysis() -> dict:
     """Generate neutral analyses for stories that need them.
 
     1. Get priority list of stories needing analysis
-    2. Generate analyses (capped at 5 per cycle)
+    2. Generate analyses (capped at analysis_batch_size per cycle)
     3. Print summary
 
     Returns: analysis generation stats
@@ -412,7 +412,7 @@ def run_analysis() -> dict:
     console.print(f"  {len(story_ids)} stories need analysis")
 
     # Generate
-    result = generate_analyses(story_ids=story_ids)
+    result = generate_analyses(story_ids=story_ids, max_per_cycle=batch_size)
 
     # Summary
     console.print(f"  Generated: {result['generated']}")

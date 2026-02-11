@@ -466,5 +466,437 @@
     "reason_flagged": "too short (16 chars)",
     "similarity": 0.299,
     "timestamp": "2026-02-09T08:37:23.170169+00:00"
+  },
+  {
+    "story_id": 597,
+    "old_headline": "Immigration Enforcement Operations Controversy",
+    "new_headline": "Trump Administration Immigration Enforcement Operations and Detention Procedures",
+    "rationale": "The original title 'Immigration Enforcement Operations Controversy' is vague about what operations occurred and whose perspective is being described; the rewrite specifies the administration involved and the core subject matter (enforcement operations and detention) that connects the disparate articles.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.667,
+    "timestamp": "2026-02-10T22:05:28.599867+00:00"
+  },
+  {
+    "story_id": 479,
+    "old_headline": "2 Reasons Why We Break Promises To Ourselves, By A Psychologist",
+    "new_headline": "Psychologist explains two factors in self-promise breaking behavior",
+    "rationale": "The original title uses clickbait phrasing ('2 Reasons Why We Break') without stating the actual subject; this version specifies the source (psychologist), topic (self-promise breaking), and removes the manipulative framing while staying neutral and factual.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.185,
+    "timestamp": "2026-02-10T22:05:31.189914+00:00"
+  },
+  {
+    "story_id": 678,
+    "old_headline": "USD/JPY Intervention Risks",
+    "new_headline": "Japan's Takaichi wins election; USD/JPY currency intervention risks rise",
+    "rationale": "The original title 'USD/JPY Intervention Risks' was vague and lacked context; this version specifies the triggering event (Takaichi's election victory) and the currency market consequence, making the connection between the news cluster and financial impact clear.",
+    "reason_flagged": "too short (26 chars)",
+    "similarity": 0.531,
+    "timestamp": "2026-02-10T22:05:34.012070+00:00"
+  },
+  {
+    "story_id": 545,
+    "old_headline": "Social Media Addiction Trial",
+    "new_headline": "Meta and YouTube face trial over allegations of addictive platform design",
+    "rationale": "The original title was vague about which companies, which platforms, and what specific claims were involved; this version specifies the defendants, platforms, and the core allegation that unites all articles.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.356,
+    "timestamp": "2026-02-10T22:05:36.672199+00:00"
+  },
+  {
+    "story_id": 550,
+    "old_headline": "Iran Arrests Reformist Politicians",
+    "new_headline": "Iran arrests several reformist politicians during post-protest crackdown",
+    "rationale": "The original title lacked context about when and why the arrests occurred; the rewrite specifies these arrests are part of a broader government response to recent protests, providing necessary specificity while maintaining neutrality.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.642,
+    "timestamp": "2026-02-10T22:05:39.541463+00:00"
+  },
+  {
+    "story_id": 741,
+    "old_headline": "Lawmakers Demand Lutnick Resignation",
+    "new_headline": "Lawmakers call for Commerce Secretary Lutnick to resign over Epstein ties",
+    "rationale": "The original title was vague about who Lutnick is and why resignation was demanded; the rewrite specifies his position and the reason (Epstein ties) while maintaining neutrality.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.532,
+    "timestamp": "2026-02-10T22:05:42.614427+00:00"
+  },
+  {
+    "story_id": 608,
+    "old_headline": "ChatGPT rolls out ads",
+    "new_headline": "OpenAI begins testing advertisements in ChatGPT",
+    "rationale": "The original title 'ChatGPT rolls out ads' is vague about the company responsible and the stage of implementation; the rewrite specifies OpenAI as the actor and 'testing' as the current status based on the article lede.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.206,
+    "timestamp": "2026-02-10T22:05:45.483245+00:00"
+  },
+  {
+    "story_id": 506,
+    "old_headline": "US UN Funding Arrears",
+    "new_headline": "UN awaits clarification on US payment of nearly $4 billion owed",
+    "rationale": "The original title 'US UN Funding Arrears' is vague and technical; this version specifies the exact amount owed, the parties involved, and the current status (awaiting clarification on payment), making it concrete and informative.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.238,
+    "timestamp": "2026-02-10T22:05:47.849206+00:00"
+  },
+  {
+    "story_id": 576,
+    "old_headline": "Exercise Role in Weight Loss",
+    "new_headline": "Studies examine exercise's limited effectiveness for weight loss",
+    "rationale": "The original title 'Exercise Role in Weight Loss' is vague about what that role actually is; this specifies that research indicates exercise has limited effectiveness, which accurately reflects the cluster's shared focus across multiple sources.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.478,
+    "timestamp": "2026-02-10T22:05:50.168697+00:00"
+  },
+  {
+    "story_id": 511,
+    "old_headline": "Houston, We Have a Problem",
+    "new_headline": "NASA lunar program faces delays as space agencies shift priorities",
+    "rationale": "The original phrase 'Houston, We Have a Problem' is a cultural reference with no specific meaning; the rewrite identifies the actual subject matter across the cluster—challenges with NASA's lunar return efforts and competing space agency strategies.",
+    "reason_flagged": "too short (26 chars)",
+    "similarity": 0.196,
+    "timestamp": "2026-02-10T22:05:55.002878+00:00"
+  },
+  {
+    "story_id": 60,
+    "old_headline": "US-Russia Nuclear Treaty Expiration",
+    "new_headline": "New START nuclear treaty between US and Russia expires",
+    "rationale": "The original title was vague about which treaty and what happened to it; this specifies the treaty name (New START) and the concrete event (expiration) that all articles address.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-10T22:05:57.457315+00:00"
+  },
+  {
+    "story_id": 580,
+    "old_headline": "5 Essential Costco Gadgets Every Remote Worker Should Try",
+    "new_headline": "Costco Electronics Popular Among Remote Workers, According to Shoppers",
+    "rationale": "The original used prescriptive language ('Essential,' 'Should Try') that frames products as universally necessary; this version specifies the claim is based on shopper preferences rather than objective necessity.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.488,
+    "timestamp": "2026-02-10T22:06:00.114515+00:00"
+  },
+  {
+    "story_id": 718,
+    "old_headline": "$1 Billion Bet Through Kalshi During Super Bowl",
+    "new_headline": "Prediction market Kalshi records $1 billion trading volume on Super Bowl Sunday",
+    "rationale": "The original title lacked specificity about what 'bet through Kalshi' meant and didn't clarify that this was trading volume on a prediction market platform rather than traditional sports betting; the rewrite identifies the specific event, platform type, and metric.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.46,
+    "timestamp": "2026-02-10T22:06:02.785480+00:00"
+  },
+  {
+    "story_id": 505,
+    "old_headline": "Family Relationship Advice Columns",
+    "new_headline": "Family Financial and Relationship Disputes: Advice Column Selection",
+    "rationale": "The original title was generic; this specifies that the cluster contains advice columns addressing concrete family conflicts involving money, parenting, and interpersonal disagreements rather than generic relationship guidance.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.673,
+    "timestamp": "2026-02-10T22:06:05.757452+00:00"
+  },
+  {
+    "story_id": 575,
+    "old_headline": "Budget Audio Equipment Reviews",
+    "new_headline": "Budget Audio Gear Reviews: Speakers, Earbuds, and Smart Glasses",
+    "rationale": "The original title was generic; this specifies the types of audio equipment reviewed (speakers, earbuds, smart glasses) and maintains neutrality by removing the vague 'budget' framing in favor of listing actual product categories.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.473,
+    "timestamp": "2026-02-10T22:06:08.730098+00:00"
+  },
+  {
+    "story_id": 508,
+    "old_headline": "Advice Column Dating Dilemmas",
+    "new_headline": "Slate Advice Column: Readers Describe Dating and Relationship Situations",
+    "rationale": "The original title 'Advice Column Dating Dilemmas' is generic and doesn't specify the source or nature of the content; this version identifies the publication (Slate) and describes what readers actually wrote about (dating and relationship situations) rather than using the vague term 'dilemmas.'",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.495,
+    "timestamp": "2026-02-10T22:06:11.959146+00:00"
+  },
+  {
+    "story_id": 660,
+    "old_headline": "Susan Collins Runs for Re",
+    "new_headline": "Maine Sen. Susan Collins announces reelection bid for sixth term",
+    "rationale": "The original 'Susan Collins Runs for Re' is incomplete and vague; the rewrite specifies her position, state, and that this is her announcement for a sixth term, which is the core event all articles share.",
+    "reason_flagged": "too short (25 chars)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-10T22:06:14.562420+00:00"
+  },
+  {
+    "story_id": 579,
+    "old_headline": "WWE Raw February 9 2026 Event",
+    "new_headline": "WWE Raw February 9, 2026: Card, Start Time, Location",
+    "rationale": "The original title was generic event naming; this version specifies the practical details (card, start time, location) that readers actually seek, matching the consistent focus across source articles.",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.642,
+    "timestamp": "2026-02-10T22:06:17.120140+00:00"
+  },
+  {
+    "story_id": 517,
+    "old_headline": "NYC Cold Snap Claims 18 Lives",
+    "new_headline": "18 deaths recorded during extended subzero cold period in New York City",
+    "rationale": "The original title lacks specificity about the cause and context of the deaths; this version clarifies that deaths occurred during a prolonged cold snap while remaining neutral and factual.",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.22,
+    "timestamp": "2026-02-10T22:06:20.398450+00:00"
+  },
+  {
+    "story_id": 523,
+    "old_headline": "Russia Ukraine Conflict Escalates",
+    "new_headline": "Russia intensifies military operations in Ukraine and sabotage across Europe",
+    "rationale": "The original 'escalates' is vague and emotional; this headline specifies the two main theaters (Ukraine military operations and European sabotage campaigns) with concrete verb 'intensifies' while remaining neutral.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.367,
+    "timestamp": "2026-02-10T22:06:23.263456+00:00"
+  },
+  {
+    "story_id": 734,
+    "old_headline": "The first signs of burnout are coming from the people who embrace AI the most",
+    "new_headline": "Study: Heavy AI adoption correlates with increased work intensity, not reduction",
+    "rationale": "The original title uses vague emotional framing ('first signs of burnout') without specifying the actual finding; the rewrite identifies the specific research claim across the cluster that AI adoption intensifies rather than reduces work.",
+    "reason_flagged": "vague opener ('the first')",
+    "similarity": 0.191,
+    "timestamp": "2026-02-10T22:06:25.826345+00:00"
+  },
+  {
+    "story_id": 642,
+    "old_headline": "Cuba Faces Oil Import Crisis",
+    "new_headline": "Cuba receives no oil imports for first time in decade",
+    "rationale": "The original title was vague about the nature and severity of the crisis; this specifies the concrete event (zero oil imports) and timeframe (first time in decade) that unifies all articles.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.519,
+    "timestamp": "2026-02-10T22:06:28.299515+00:00"
+  },
+  {
+    "story_id": 529,
+    "old_headline": "2024 Senate Primary Races Heat Up",
+    "new_headline": "Texas Senate primaries feature Paxton leading GOP race, Crockett in Democratic race",
+    "rationale": "Original title was vague about which races and locations; rewritten version specifies the two main Texas Senate primary contests covered across the articles with concrete details about frontrunners.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.414,
+    "timestamp": "2026-02-10T22:06:31.407612+00:00"
+  },
+  {
+    "story_id": 592,
+    "old_headline": "The hidden risks of TrumpRx",
+    "new_headline": "Pharmaceutical companies face regulatory and competitive pressures on drug pricing",
+    "rationale": "The original title 'The hidden risks of TrumpRx' is vague and politically charged; the cluster reveals multiple biotech/pharma stories about FDA decisions, drug pricing competition, and regulatory actions, with no coherent 'TrumpRx' subject, so this rewrite captures the actual common theme across the healthcare articles.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.294,
+    "timestamp": "2026-02-10T22:06:34.941111+00:00"
+  },
+  {
+    "story_id": 597,
+    "old_headline": "Immigration Enforcement Operations Controversy",
+    "new_headline": "Trump administration immigration enforcement operations spark debate over arrest records",
+    "rationale": "The original title was vague about what 'controversy' entailed; this specifies the core disagreement—claims about criminal records of arrested immigrants—while remaining neutral about competing assertions.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.612,
+    "timestamp": "2026-02-10T22:06:45.296888+00:00"
+  },
+  {
+    "story_id": 479,
+    "old_headline": "2 Reasons Why We Break Promises To Ourselves, By A Psychologist",
+    "new_headline": "Psychologist explains two factors behind breaking personal promises",
+    "rationale": "The original title is vague about what 'reasons' entails and uses generic framing; this version specifies the content (two factors) and removes the 'By A Psychologist' byline phrasing to create a neutral, descriptive headline.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.185,
+    "timestamp": "2026-02-10T22:06:48.562593+00:00"
+  },
+  {
+    "story_id": 678,
+    "old_headline": "USD/JPY Intervention Risks",
+    "new_headline": "Japan's Takaichi wins election; USD/JPY faces intervention risks",
+    "rationale": "Original title was too vague about what 'intervention risks' meant; rewrite specifies both the election event and the currency market context that connects all articles.",
+    "reason_flagged": "too short (26 chars)",
+    "similarity": 0.578,
+    "timestamp": "2026-02-10T22:06:51.505708+00:00"
+  },
+  {
+    "story_id": 545,
+    "old_headline": "Social Media Addiction Trial",
+    "new_headline": "Meta and YouTube face trial over alleged addictive platform design",
+    "rationale": "The original title was vague about which companies, which trial, and what the core claim was; this version specifies the defendants, the legal action, and the central allegation while maintaining neutrality.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.383,
+    "timestamp": "2026-02-10T22:06:53.965368+00:00"
+  },
+  {
+    "story_id": 550,
+    "old_headline": "Iran Arrests Reformist Politicians",
+    "new_headline": "Iran arrests several reformist politicians during post-protest crackdown",
+    "rationale": "The original title lacks context about when and why arrests occurred; this version specifies they followed nationwide protests and positions them within a broader crackdown, matching the shared subject across all articles.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.642,
+    "timestamp": "2026-02-10T22:06:56.406814+00:00"
+  },
+  {
+    "story_id": 741,
+    "old_headline": "Lawmakers Demand Lutnick Resignation",
+    "new_headline": "Lawmakers call on Commerce Secretary Lutnick to resign over Epstein ties",
+    "rationale": "The original title omitted Lutnick's position and the specific reason for the resignation calls; this version provides both context and the substantive issue driving the demand.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.537,
+    "timestamp": "2026-02-10T22:06:59.037762+00:00"
+  },
+  {
+    "story_id": 608,
+    "old_headline": "ChatGPT rolls out ads",
+    "new_headline": "OpenAI begins testing advertisements within ChatGPT",
+    "rationale": "The original 'ChatGPT rolls out ads' is vague about what 'rolls out' means; the rewrite specifies that OpenAI is testing (not fully launching) ads within the ChatGPT product itself.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.194,
+    "timestamp": "2026-02-10T22:07:01.445701+00:00"
+  },
+  {
+    "story_id": 506,
+    "old_headline": "US UN Funding Arrears",
+    "new_headline": "UN Awaits US Payment Plan for Nearly $4 Billion in Arrears",
+    "rationale": "The original title 'US UN Funding Arrears' is vague about the specific situation; this version clarifies the concrete issue: the UN is waiting to learn how much of the ~$4 billion owed the US will actually pay.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.43,
+    "timestamp": "2026-02-10T22:07:04.022328+00:00"
+  },
+  {
+    "story_id": 576,
+    "old_headline": "Exercise Role in Weight Loss",
+    "new_headline": "Studies suggest exercise alone may not be effective for weight loss",
+    "rationale": "The original title 'Exercise Role in Weight Loss' is vague about what that role is; the rewrite specifies the actual finding across articles that exercise has limited weight loss effectiveness, making it concrete and factual.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.526,
+    "timestamp": "2026-02-10T22:07:06.910121+00:00"
+  },
+  {
+    "story_id": 511,
+    "old_headline": "Houston, We Have a Problem",
+    "new_headline": "NASA lunar program faces delays and technical challenges",
+    "rationale": "The original title was a generic idiom unrelated to the actual content; the cluster discusses specific issues with NASA's Artemis lunar mission, including delays and technical problems, which needed to be made explicit and factual.",
+    "reason_flagged": "too short (26 chars)",
+    "similarity": 0.22,
+    "timestamp": "2026-02-10T22:07:10.272081+00:00"
+  },
+  {
+    "story_id": 60,
+    "old_headline": "US-Russia Nuclear Treaty Expiration",
+    "new_headline": "New START nuclear treaty between US and Russia expires",
+    "rationale": "Original title was vague about which treaty and what 'expiration' meant; this specifies New START and clarifies the event as the treaty's expiration without emotional framing.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-10T22:07:13.093336+00:00"
+  },
+  {
+    "story_id": 580,
+    "old_headline": "5 Essential Costco Gadgets Every Remote Worker Should Try",
+    "new_headline": "Five Electronics Available at Costco Marketed for Remote Workers",
+    "rationale": "The original uses vague subjective language ('Essential,' 'Should Try'); the rewrite specifies the products are electronics sold at Costco and describes them as marketed for remote workers rather than prescriptively endorsing them.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.545,
+    "timestamp": "2026-02-10T22:07:16.309898+00:00"
+  },
+  {
+    "story_id": 718,
+    "old_headline": "$1 Billion Bet Through Kalshi During Super Bowl",
+    "new_headline": "Prediction market Kalshi recorded $1 billion trading volume on Super Bowl Sunday",
+    "rationale": "The original title lacked specificity about what 'bet through' meant and which Super Bowl; this clarifies it refers to trading volume on a specific platform during a specific event.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.457,
+    "timestamp": "2026-02-10T22:07:19.521929+00:00"
+  },
+  {
+    "story_id": 505,
+    "old_headline": "Family Relationship Advice Columns",
+    "new_headline": "Advice columns on family conflicts over finances, property, and parenting",
+    "rationale": "The original title was generic; this specifies the actual topics covered (financial disputes, inheritance/property issues, parenting disagreements) rather than just 'relationship advice.'",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.262,
+    "timestamp": "2026-02-10T22:07:22.147223+00:00"
+  },
+  {
+    "story_id": 575,
+    "old_headline": "Budget Audio Equipment Reviews",
+    "new_headline": "Budget Audio Equipment Reviews: Speakers, Earbuds, and In-Ear Monitors",
+    "rationale": "The original title was generic and didn't specify what audio equipment was being reviewed; this version lists the actual product categories covered across the articles.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.6,
+    "timestamp": "2026-02-10T22:07:25.099586+00:00"
+  },
+  {
+    "story_id": 508,
+    "old_headline": "Advice Column Dating Dilemmas",
+    "new_headline": "Slate Advice Column Addresses Relationship and Dating Situations",
+    "rationale": "The original title 'Advice Column Dating Dilemmas' is generic and vague; this version specifies the publication (Slate), the format (advice column), and the actual subject matter (relationship and dating situations) covered across the clustered articles.",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.516,
+    "timestamp": "2026-02-10T22:07:28.196486+00:00"
+  },
+  {
+    "story_id": 660,
+    "old_headline": "Susan Collins Runs for Re",
+    "new_headline": "Maine Sen. Susan Collins announces reelection bid for sixth term",
+    "rationale": "The original 'Susan Collins Runs for Re' is incomplete and vague; the rewritten headline specifies the office, term number, and completes the action being announced across all articles.",
+    "reason_flagged": "too short (25 chars)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-10T22:07:30.782797+00:00"
+  },
+  {
+    "story_id": 579,
+    "old_headline": "WWE Raw February 9 2026 Event",
+    "new_headline": "WWE Raw February 9, 2026: Card, Start Time, Location",
+    "rationale": "The original title was generic event identification; this specifies the key practical details (card, start time, location) that readers seek, making it concrete and informative rather than vague.",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.642,
+    "timestamp": "2026-02-10T22:07:33.771018+00:00"
+  },
+  {
+    "story_id": 517,
+    "old_headline": "NYC Cold Snap Claims 18 Lives",
+    "new_headline": "Eighteen deaths reported during New York City cold snap",
+    "rationale": "The original title lacked specificity about what caused the deaths and who was affected; this version provides the core fact (18 deaths, cold snap location) while removing the implicit emotional framing of 'claims.'",
+    "reason_flagged": "too short (29 chars)",
+    "similarity": 0.31,
+    "timestamp": "2026-02-10T22:07:37.196601+00:00"
+  },
+  {
+    "story_id": 523,
+    "old_headline": "Russia Ukraine Conflict Escalates",
+    "new_headline": "Russia intensifies military operations in Ukraine and sabotage across Europe",
+    "rationale": "The original title 'Russia Ukraine Conflict Escalates' is vague about what aspects are escalating; this version specifies the two main categories of activity documented across the articles: direct military pressure in Ukraine and broader destabilization efforts in Europe.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.367,
+    "timestamp": "2026-02-10T22:07:39.859179+00:00"
+  },
+  {
+    "story_id": 734,
+    "old_headline": "The first signs of burnout are coming from the people who embrace AI the most",
+    "new_headline": "Study finds heavy AI adoption correlates with increased work intensity",
+    "rationale": "The original title uses vague language ('first signs,' 'embrace AI the most') and emotional framing ('burnout'); this version specifies the actual finding—a correlation between AI adoption levels and work intensity—while remaining neutral and factual.",
+    "reason_flagged": "vague opener ('the first')",
+    "similarity": 0.286,
+    "timestamp": "2026-02-10T22:07:42.317578+00:00"
+  },
+  {
+    "story_id": 642,
+    "old_headline": "Cuba Faces Oil Import Crisis",
+    "new_headline": "Cuba Receives First Month Without Oil Imports in Decade",
+    "rationale": "The original title is vague about what the 'crisis' entails and when it occurred; the rewrite specifies the concrete event (no oil imports for one month) and timeframe (first time in decade), replacing the loaded term 'crisis' with factual description.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.506,
+    "timestamp": "2026-02-10T22:07:44.981898+00:00"
+  },
+  {
+    "story_id": 529,
+    "old_headline": "2024 Senate Primary Races Heat Up",
+    "new_headline": "Texas Senate primaries feature Paxton polling lead, Crockett's unconventional campaign",
+    "rationale": "The original title was vague about which races and specific developments were occurring; this specifies the two main Texas Senate primary stories (Republican and Democratic) with concrete details about what's actually happening in each.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.387,
+    "timestamp": "2026-02-10T22:07:47.867035+00:00"
+  },
+  {
+    "story_id": 592,
+    "old_headline": "The hidden risks of TrumpRx",
+    "new_headline": "Pharmaceutical companies develop new drug therapies for various conditions",
+    "rationale": "The original 'TrumpRx' title is a branded, vague reference that provides no information about actual drug development; the rewrite specifies that the cluster covers multiple pharmaceutical companies developing new therapies across different medical conditions.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.218,
+    "timestamp": "2026-02-10T22:07:51.126307+00:00"
   }
 ]
