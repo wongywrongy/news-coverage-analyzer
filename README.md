@@ -79,27 +79,46 @@ ClearSignal's pipeline processes news articles through 9 stages, from raw RSS in
 | **Frame** | Classify editorial framing per article | Claude Haiku |
 | **Analyze** | Generate full structured analysis | Claude Sonnet |
 
-### Re-running analyses
+### One-off Scripts
 
-When the analysis prompt is updated, re-generate all existing analyses:
+All scripts run from the `backend/` directory.
 
 ```bash
 cd backend
 
-# Preview what will be re-analyzed (dry run, no API calls)
-python -m scripts.reanalyze_all
+# Re-generate all analyses with updated prompt
+python -m scripts.reanalyze_all                          # Dry run (preview only)
+python -m scripts.reanalyze_all --execute --limit 3      # Test on small batch
+python -m scripts.reanalyze_all --execute                # Full run
+python -m scripts.reanalyze_all --execute --resume       # Resume if interrupted
+python -m scripts.reanalyze_all --execute --delay 1.5    # Custom delay between calls
 
-# Test on a small batch
-python -m scripts.reanalyze_all --execute --limit 3
+# Generate analyses for stories that don't have one
+python -m scripts.backfill_analyses --limit 10
+python -m scripts.backfill_analyses --min-impact 50
+python -m scripts.backfill_analyses --force              # Regenerate existing
 
-# Run the full batch
-python -m scripts.reanalyze_all --execute
+# Scrape article bodies
+python -m scripts.scrape_backfill                        # Default: 50 articles
+python -m scripts.scrape_backfill --limit 100
 
-# Resume if interrupted
-python -m scripts.reanalyze_all --execute --resume
+# Score significance and rename vague topics
+python -m scripts.filter_topics --dry-run
+python -m scripts.filter_topics --limit 20
 
-# Custom delay between API calls (default 2s)
-python -m scripts.reanalyze_all --execute --delay 1.5
+# Fix truncated/vague headlines
+python -m scripts.migrate_headlines                      # Dry run
+python -m scripts.migrate_headlines --apply --limit 10
+
+# Backfill categories (keyword matching + AI classification)
+python -m scripts.backfill_categories
+python -m scripts.backfill_categories --keywords-only
+python -m scripts.backfill_categories --ai-only
+
+# Backfill computed fields (no flags, just run)
+python -m scripts.backfill_time_metadata
+python -m scripts.backfill_daily_counts
+python -m scripts.backfill_coverage
 ```
 
 ### Configuration

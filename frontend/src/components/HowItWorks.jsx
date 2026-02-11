@@ -5,292 +5,368 @@ import Link from 'next/link';
 export default function HowItWorks() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className="hiw-nav" style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '18px 48px',
-        borderBottom: '1px solid var(--border)',
-        background: 'rgba(250,250,247,0.95)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        height: 58,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 48px', borderBottom: '1px solid var(--border)',
+        background: 'rgba(250,250,247,0.95)', backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)', position: 'sticky', top: 0,
+        zIndex: 100, height: 58,
       }}>
         <Link href="/" style={{ textDecoration: 'none', color: 'var(--ink)' }}>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 800,
-            fontSize: 22,
-            letterSpacing: '-0.5px',
+            fontFamily: "'Playfair Display', serif", fontWeight: 800,
+            fontSize: 22, letterSpacing: '-0.5px',
           }}>
             Clear<span style={{ color: 'var(--accent-gold)' }}>Signal</span>
           </div>
         </Link>
         <Link href="/" style={{
-          fontSize: 14,
-          color: 'var(--ink-muted)',
-          textDecoration: 'none',
-          transition: 'color 0.2s',
+          fontSize: 14, color: 'var(--ink-muted)', textDecoration: 'none',
         }}>
           &larr; Back to stories
         </Link>
       </nav>
 
-      {/* ── Hero ── */}
+      {/* Cinematic Dark Hero */}
       <section className="hiw-hero" style={{
-        padding: 'var(--space-xl) 48px var(--space-lg)',
-        textAlign: 'center',
+        background: 'var(--bg-dark)', color: '#fff',
+        padding: '80px 48px 64px', position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <h1 className="hiw-hero-title" style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 900,
-            fontSize: 44,
-            lineHeight: 1.1,
-            letterSpacing: '-1.5px',
-            marginBottom: 'var(--space-sm)',
+        <div style={{
+          content: '', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'radial-gradient(ellipse at 20% 80%, rgba(200,150,62,0.06) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(43,76,126,0.08) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative', maxWidth: 1080, margin: '0 auto' }}>
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif", fontWeight: 900,
+            fontSize: 52, lineHeight: 1.05, letterSpacing: '-2px',
+            marginBottom: 'var(--space-md)', maxWidth: 600,
           }}>
-            How{' '}
-            <em style={{
-              fontStyle: 'normal',
-              background: 'linear-gradient(135deg, var(--accent-gold), #D4A853)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              ClearSignal
-            </em>
-            {' '}works
+            From raw feeds to<br />
+            <em style={{ fontStyle: 'normal', color: 'var(--accent-gold)' }}>structured clarity</em>
           </h1>
           <p style={{
-            fontSize: 17,
-            lineHeight: 1.65,
-            color: 'var(--ink-secondary)',
+            fontSize: 17, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)',
+            maxWidth: 480, marginBottom: 'var(--space-xl)',
           }}>
-            A 9-stage AI pipeline that ingests raw RSS feeds, discovers story clusters
-            through semantic similarity, and generates neutral AP-style analyses —
-            without human editorial input.
+            9 stages turn the noise of 40+ sources into a map of who's saying what — and what's being left out.
           </p>
-        </div>
 
-        {/* Pipeline strip */}
-        <div className="hiw-pipeline" style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          flexWrap: 'wrap',
-          marginTop: 'var(--space-lg)',
-          padding: 'var(--space-md) var(--space-lg)',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          maxWidth: 920,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-        }}>
-          {PIPELINE_NODES.map((node, i) => (
-            <span key={node.label} style={{ display: 'contents' }}>
-              <PipelineNode label={node.label} type={node.type} />
-              {i < PIPELINE_NODES.length - 1 && (
-                <>
-                  <span className="hiw-arrow" style={{ color: '#ccc', fontSize: 16, flexShrink: 0 }}>&rarr;</span>
-                  <Connector />
-                </>
-              )}
-            </span>
-          ))}
-        </div>
-
-        {/* Stats row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 'var(--space-md)',
-          marginTop: 'var(--space-md)',
-        }}>
-          {HERO_STATS.map((stat, i) => (
-            <span key={stat.label} style={{ display: 'contents' }}>
-              <div style={{ textAlign: 'center' }}>
-                <span style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontWeight: 800,
-                  fontSize: 20,
-                  color: 'var(--accent-blue-deep)',
-                  display: 'block',
-                }}>
-                  {stat.value}
-                </span>
-                <span style={{
-                  fontSize: 11,
-                  color: 'var(--ink-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.8px',
-                }}>
-                  {stat.label}
-                </span>
+          {/* Pipeline Grid */}
+          <div className="hiw-pipeline">
+            {PIPELINE.map((cell) => (
+              <div key={cell.num} className={`hp-cell${cell.final ? ' final' : ''}`}>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 9, color: 'rgba(255,255,255,0.3)', marginBottom: 6,
+                }}>{cell.num}</div>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12, fontWeight: 500,
+                  color: cell.final ? 'var(--accent-gold)' : 'rgba(255,255,255,0.7)',
+                }}>{cell.name}</div>
+                {cell.model && (
+                  <div style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 9, marginTop: 4,
+                    color: cell.final ? 'rgba(200,150,62,0.5)' : 'rgba(255,255,255,0.25)',
+                  }}>{cell.model}</div>
+                )}
               </div>
-              {i < HERO_STATS.length - 1 && (
-                <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
-              )}
-            </span>
-          ))}
+            ))}
+          </div>
+
+          {/* Principles */}
+          <div className="hiw-principles">
+            {PRINCIPLES.map((p) => (
+              <div key={p.title} style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 700,
+                  color: 'rgba(255,255,255,0.9)', marginBottom: 4,
+                }}>{p.title}</div>
+                <div style={{
+                  fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)',
+                }}>{p.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Principle Cards ── */}
-      <div className="hiw-principles" style={{
-        maxWidth: 1080,
-        margin: '0 auto',
-        padding: 'var(--space-xl) 48px var(--space-lg)',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 'var(--space-md)',
-      }}>
-        {PRINCIPLES.map((p) => (
-          <div key={p.title} style={{
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            padding: 'var(--space-md)',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 28, marginBottom: 'var(--space-sm)' }}>{p.icon}</div>
-            <div style={{
-              fontFamily: "'Playfair Display', serif",
-              fontWeight: 800,
-              fontSize: 18,
-              marginBottom: 'var(--space-xs)',
-            }}>
-              {p.title}
-            </div>
-            <div style={{
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: 'var(--ink-secondary)',
-            }}>
-              {p.desc}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Phase 1: Collection and Discovery ── */}
-      <PhaseSection
-        num="Phase 1"
-        title="Collection and Discovery"
-        sub="Raw articles are pulled from 40+ feeds, embedded into vector space, and grouped into stories by semantic similarity."
-      >
-        <FlowDiagram>
-          <div className="hiw-flow-h">
-            {PHASE1_COLS.map((col, i) => (
-              <span key={col.label} style={{ display: 'contents' }}>
-                <FlowCol boxType={col.boxType} label={col.label} desc={col.desc} isLast={i === PHASE1_COLS.length - 1} />
-                {i < PHASE1_COLS.length - 1 && <Connector />}
-              </span>
+      {/* Stage 01: Ingest */}
+      <StageSection num="Stage 01" title="Ingest"
+        desc="Concurrent RSS fetcher pulls from 40+ feeds across the political spectrum every 15 minutes. URLs are normalized, deduplicated, and stored with source metadata including editorial lean ratings.">
+        <div className="feed-cascade">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {FEEDS.map((f, i) => (
+              <div key={i} className="feed-row" style={f.faded ? { opacity: 0.4, borderStyle: 'dashed' } : undefined}>
+                <span className={`feed-lean ${f.lean}`}>{f.leanLabel}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.domain}</span>
+                <span style={{ color: 'var(--ink-secondary)', fontSize: 10, flexShrink: 0 }}>{f.count}</span>
+              </div>
             ))}
           </div>
-        </FlowDiagram>
-      </PhaseSection>
-
-      {/* ── Phase 2: Evaluation and Triage ── */}
-      <PhaseSection
-        num="Phase 2"
-        title="Evaluation and Triage"
-        sub="Every topic is validated for recency, scored for real-world impact, and triaged by an editorial selection model that decides what gets deep analysis."
-        warm
-      >
-        <FlowDiagram warm>
-          <div className="hiw-flow-h">
-            {PHASE2_COLS.map((col, i) => (
-              <span key={col.label} style={{ display: 'contents' }}>
-                <FlowCol boxType={col.boxType} label={col.label} desc={col.desc} isLast={i === PHASE2_COLS.length - 1} />
-                {i < PHASE2_COLS.length - 1 && <Connector />}
-              </span>
-            ))}
-          </div>
-        </FlowDiagram>
-      </PhaseSection>
-
-      {/* ── Phase 3: Deep Analysis ── */}
-      <PhaseSection
-        num="Phase 3"
-        title="Deep Analysis"
-        sub="Selected stories get full article extraction, source-blind framing classification, and a structured editorial analysis from the most capable model."
-      >
-        <FlowDiagram>
-          <div className="hiw-flow-split">
-            {/* Left path */}
-            <div className="hiw-split-left" style={{ gap: 12 }}>
-              <SplitBox
-                borderColor="var(--accent-blue)"
-                bg="rgba(43,76,126,0.04)"
-                labelColor="var(--accent-blue-deep)"
-                label="Scrape"
-                desc="Full article body text extracted via trafilatura content-aware parsing. Only runs for selected stories — no unnecessary load on source sites."
-              />
-              <div className="hiw-arrow" style={{ textAlign: 'center', color: 'var(--border)', fontSize: 18 }}>&darr;</div>
-              <Connector />
-              <SplitBox
-                borderColor="var(--accent-gold)"
-                bg="rgba(200,150,62,0.04)"
-                labelColor="var(--accent-gold)"
-                label="Frame · Haiku"
-                desc="Each article classified into 1 of 7 framing categories from its language alone — source identity is hidden. Alarmist, reassuring, adversarial, institutional, human-interest, investigative, or neutral."
-              />
-            </div>
-
-            {/* Merge arrow */}
-            <div className="hiw-split-merge hiw-arrow">
-              &rarr;
-            </div>
-
-            {/* Right: final analysis */}
-            <div className="hiw-split-right">
-              <Connector />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', justifyContent: 'center' }}>
+            <div style={{
+              border: '2px solid var(--accent-blue-deep)', borderRadius: 8,
+              padding: 20, textAlign: 'center',
+            }}>
               <div style={{
-                background: 'var(--accent-blue-deep)',
-                color: '#fff',
-                borderRadius: 8,
-                padding: '20px 24px',
-                minHeight: 168,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  letterSpacing: '0.3px',
-                  color: '#fff',
-                  display: 'block',
-                  marginBottom: 6,
-                }}>
-                  Analyze · Sonnet
-                </span>
+                fontFamily: "'Playfair Display', serif", fontWeight: 800,
+                fontSize: 32, color: 'var(--accent-blue-deep)',
+              }}>477</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>articles this cycle</div>
+            </div>
+            <div style={{
+              background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 8,
+              padding: 'var(--space-md)', fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 12, lineHeight: 2, color: 'var(--ink-secondary)',
+            }}>
+              <span style={{ color: 'var(--accent-blue-deep)' }}>title:</span> <span style={{ color: 'var(--ink)' }}>"Trump Freezes Foreign Aid..."</span><br />
+              <span style={{ color: 'var(--accent-blue-deep)' }}>source:</span> <span style={{ color: 'var(--ink)' }}>"reuters.com"</span><br />
+              <span style={{ color: 'var(--accent-blue-deep)' }}>published:</span> <span style={{ color: 'var(--ink)' }}>"2025-02-09T14:23:00Z"</span><br />
+              <span style={{ color: 'var(--accent-blue-deep)' }}>lean:</span> <span style={{ color: 'var(--ink)' }}>"center"</span><br />
+              <span style={{ color: 'var(--accent-blue-deep)' }}>url:</span> <span style={{ color: 'var(--ink)' }}>"reuters.com/world/us/..."</span>
+            </div>
+          </div>
+        </div>
+      </StageSection>
+
+      {/* Stage 02 and 03: Embed and Cluster */}
+      <StageSection num="Stage 02 and 03" title="Embed and Cluster" warm
+        modelTag="OpenAI embeddings"
+        desc="Each article headline is embedded into a 384-dimensional vector. HDBSCAN density-based clustering discovers story groups by cosine similarity. Scattered articles find each other in semantic space.">
+        <div className="cluster-viz">
+          {/* Before: scattered */}
+          <div className="cluster-panel">
+            <div style={{
+              position: 'absolute', top: 12, left: 14,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10, textTransform: 'uppercase',
+              letterSpacing: '1px', color: 'var(--ink-secondary)',
+            }}>477 scattered articles</div>
+            {SCATTERED_DOTS.map((d, i) => (
+              <div key={i} style={{
+                position: 'absolute', width: 8, height: 8, borderRadius: '50%',
+                opacity: 0.6, top: d.top, left: d.left,
+                background: `var(--cat-${d.cat})`,
+              }} />
+            ))}
+          </div>
+
+          <div className="hiw-arrow" style={{ fontSize: 28, color: 'var(--border)' }}>&rarr;</div>
+          <div className="hiw-connector" />
+
+          {/* After: clustered */}
+          <div className="cluster-panel">
+            <div style={{
+              position: 'absolute', top: 12, left: 14,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10, textTransform: 'uppercase',
+              letterSpacing: '1px', color: 'var(--ink-secondary)',
+            }}>46 story clusters</div>
+            {CLUSTERS.map((c) => (
+              <div key={c.label}>
+                <div className={`cluster-ring ${c.cat}`} style={{
+                  top: c.ring.top, left: c.ring.left,
+                  width: c.ring.w, height: c.ring.h,
+                }} />
+                {c.dots.map((d, i) => (
+                  <div key={i} style={{
+                    position: 'absolute', width: 8, height: 8, borderRadius: '50%',
+                    opacity: 0.9, top: d.top, left: d.left,
+                    background: `var(--cat-${c.catFull})`,
+                  }} />
+                ))}
                 <div style={{
-                  fontSize: 13,
-                  color: 'rgba(255,255,255,0.6)',
-                  lineHeight: 1.5,
-                  marginTop: 8,
-                }}>
-                  AP-style lede, flowing editorial narrative with inline framing contrasts, source spectrum across the political divide, and a concrete bottom line. Output as structured JSON.
+                  position: 'absolute', top: c.labelPos.top, left: c.labelPos.left,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 9, fontWeight: 500, padding: '2px 6px', borderRadius: 3,
+                  whiteSpace: 'nowrap', color: `var(--cat-${c.catFull})`,
+                  background: c.labelBg,
+                }}>{c.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{
+          textAlign: 'center', padding: 'var(--space-md) 0 0',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+          color: 'var(--ink-secondary)',
+        }}>
+          <strong style={{ color: 'var(--accent-blue-deep)' }}>"Trump freezes aid"</strong>
+          {' '}&rarr; [0.023, -0.187, 0.441, ... ] &rarr; cosine similarity &rarr; cluster assignment
+        </div>
+      </StageSection>
+
+      {/* Stage 04: Label */}
+      <StageSection num="Stage 04" title="Label" modelTag="Claude Haiku"
+        desc="Different outlets write different headlines for the same event. Claude Haiku reads them all and generates one neutral, wire-service-style topic label. No editorializing — just the facts.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div className="label-inputs">
+            {HEADLINES.map((h, i) => (
+              <div key={i} className={`label-headline ${h.lean}`}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                  color: 'var(--ink-muted)', display: 'block', marginBottom: 4,
+                }}>{h.src}</span>
+                {h.text}
+              </div>
+            ))}
+          </div>
+          <div style={{
+            border: '2px solid var(--accent-blue-deep)', borderRadius: 8,
+            padding: 'var(--space-md) var(--space-lg)', textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+              color: 'var(--accent-gold)', textTransform: 'uppercase',
+              letterSpacing: '1px', marginBottom: 'var(--space-xs)',
+            }}>Neutral Topic Label</div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontWeight: 800,
+              fontSize: 22, lineHeight: 1.3,
+            }}>Trump Administration Freezes Foreign Aid Pending Policy Review</div>
+          </div>
+        </div>
+      </StageSection>
+
+      {/* Stage 05: Score */}
+      <StageSection num="Stage 05" title="Score" warm modelTag="Claude Haiku"
+        desc="Every topic receives an impact score from a 5-factor model that measures real-world significance — not clickbait potential, not engagement, not controversy. A separate coverage score is computed from signal data alone.">
+        <div className="score-viz">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            {FACTORS.map((f) => (
+              <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, minWidth: 160, flexShrink: 0 }}>{f.label}</span>
+                <div className="score-bar-track">
+                  <div className="score-bar-fill" style={{ width: f.pct }}>
+                    <span style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 11, fontWeight: 500, color: '#fff',
+                    }}>{f.score}</span>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontWeight: 900,
+              fontSize: 72, color: 'var(--accent-blue-deep)', lineHeight: 1,
+            }}>80</div>
+            <div style={{ fontSize: 14, color: 'var(--ink-muted)', marginTop: 'var(--space-xs)' }}>Impact Score</div>
+            <div style={{
+              fontSize: 12, color: 'var(--ink-secondary)', marginTop: 'var(--space-sm)',
+              fontStyle: 'italic', maxWidth: 240,
+            }}>"We do not score based on how interesting or clickable the story is"</div>
+          </div>
+        </div>
+      </StageSection>
+
+      {/* Stage 08: Frame */}
+      <StageSection num="Stage 08" title="Frame" modelTag="Claude Haiku"
+        desc="Each article's editorial framing is classified into one of 7 categories from its language alone. The model never sees source names, political lean labels, or any metadata about who published the article.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          {/* Firewall banner */}
+          <div style={{
+            textAlign: 'center', padding: 'var(--space-sm)',
+            border: '1px dashed var(--accent-gold)', borderRadius: 6,
+            fontSize: 13, color: 'var(--accent-gold)', fontWeight: 600,
+          }}>
+            Source identity is hidden from the AI. Framing is classified from text alone.
+          </div>
+
+          {/* Event label */}
+          <div style={{
+            textAlign: 'center', padding: 'var(--space-sm)',
+            background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 6,
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 12,
+            color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '1px',
+          }}>Same event: Foreign Aid Freeze</div>
+
+          {/* Three frame cards */}
+          <div className="frame-cards">
+            {FRAMES.map((f) => (
+              <div key={f.src} className={`frame-card ${f.lean}`}>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                  color: 'var(--ink-secondary)', marginBottom: 6,
+                }}>{f.src}</div>
+                <div style={{
+                  fontSize: 14, lineHeight: 1.5, color: 'var(--ink-secondary)',
+                  marginBottom: 'var(--space-sm)',
+                }} dangerouslySetInnerHTML={{ __html: f.html }} />
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+                  letterSpacing: '0.5px', padding: '3px 8px', borderRadius: 4,
+                  display: 'inline-block', color: f.tagColor, background: f.tagBg,
+                }}>{f.tag}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </StageSection>
+
+      {/* Stage 09: Analyze */}
+      <StageSection num="Stage 09" title="Analyze" warm modelTag="Claude Sonnet"
+        desc="The most capable model synthesizes everything — headlines, article bodies, framing classifications, impact scores — into a structured analysis that reads like a senior editor's briefing. Not a summary. A map of how the story is being told differently.">
+        <div className="analyze-viz">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+            {INPUTS.map((inp) => (
+              <div key={inp.icon} style={{
+                padding: '10px 14px', background: '#F9FAFB',
+                border: '1px solid #E5E7EB', borderRadius: 6,
+                fontSize: 12, color: 'var(--ink-secondary)',
+                display: 'flex', alignItems: 'center', gap: 'var(--space-sm)',
+              }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                  color: 'var(--ink-secondary)', background: '#f0eeea',
+                  padding: '2px 6px', borderRadius: 3, flexShrink: 0,
+                }}>{inp.icon}</span>
+                {inp.text}
+              </div>
+            ))}
+          </div>
+
+          <div className="hiw-arrow" style={{
+            fontSize: 28, color: 'var(--border)',
+            display: 'flex', alignItems: 'center',
+          }}>&rarr;</div>
+          <div className="hiw-connector" />
+
+          <div className="analyze-output">
+            <div style={{
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '1px',
+              color: 'rgba(255,255,255,0.5)', marginBottom: 'var(--space-sm)',
+            }}>Structured Analysis Output</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              {ANALYSIS_SECTIONS.map((s) => (
+                <div key={s.label} className="analyze-output-section">
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+                    color: 'var(--accent-gold)', textTransform: 'uppercase',
+                    letterSpacing: '0.5px', display: 'block', marginBottom: 4,
+                  }}>{s.label}</span>
+                  {s.text}
+                </div>
+              ))}
             </div>
           </div>
-        </FlowDiagram>
-      </PhaseSection>
+        </div>
+      </StageSection>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <footer style={{
-        textAlign: 'center',
-        padding: 'var(--space-lg) 48px',
+        textAlign: 'center', padding: 'var(--space-lg) 48px',
         borderTop: '1px solid var(--border)',
       }}>
         <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>
@@ -301,209 +377,186 @@ export default function HowItWorks() {
   );
 }
 
+/* ── Sub-components ── */
+
+function StageSection({ num, title, desc, warm, modelTag, children }) {
+  return (
+    <div className={`hiw-stage${warm ? ' warm' : ''}`}>
+      <div className="hiw-stage-inner">
+        <div style={{ marginBottom: 'var(--space-xl)' }}>
+          <div style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 12,
+            fontWeight: 500, color: 'var(--accent-gold)',
+            textTransform: 'uppercase', letterSpacing: '1.5px',
+            marginBottom: 'var(--space-xs)',
+            display: 'flex', alignItems: 'center', gap: 'var(--space-sm)',
+          }}>
+            {num}
+            {modelTag && (
+              <span style={{
+                fontSize: 10, color: 'var(--ink-muted)',
+                background: 'rgba(0,0,0,0.04)', padding: '2px 8px',
+                borderRadius: 3, letterSpacing: '0.5px',
+              }}>{modelTag}</span>
+            )}
+          </div>
+          <div style={{
+            fontFamily: "'Playfair Display', serif", fontWeight: 800,
+            fontSize: 32, letterSpacing: '-0.5px',
+            marginBottom: 'var(--space-xs)',
+          }}>{title}</div>
+          <div style={{
+            fontSize: 16, lineHeight: 1.65, color: 'var(--ink-secondary)',
+            maxWidth: 640,
+          }}>{desc}</div>
+        </div>
+        <div className={`hiw-visual`}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Data ── */
 
-const PIPELINE_NODES = [
-  { label: 'Ingest', type: 'src' },
-  { label: 'Cluster', type: 'proc' },
-  { label: 'Label', type: 'proc' },
-  { label: 'Validate', type: 'ai-light' },
-  { label: 'Score', type: 'proc' },
-  { label: 'Select', type: 'ai-light' },
-  { label: 'Scrape', type: 'proc' },
-  { label: 'Frame', type: 'proc' },
-  { label: 'Analyze', type: 'ai-heavy' },
-];
-
-const HERO_STATS = [
-  { value: '40+', label: 'RSS feeds' },
-  { value: '9', label: 'stages' },
-  { value: '15m', label: 'cycle interval' },
+const PIPELINE = [
+  { num: '01', name: 'Ingest' },
+  { num: '02', name: 'Embed', model: 'OpenAI' },
+  { num: '03', name: 'Cluster', model: 'HDBSCAN' },
+  { num: '04', name: 'Label', model: 'Haiku' },
+  { num: '05', name: 'Validate', model: 'GPT-4o' },
+  { num: '06', name: 'Score', model: 'Haiku' },
+  { num: '07', name: 'Select', model: 'GPT-4o' },
+  { num: '08', name: 'Frame', model: 'Haiku' },
+  { num: '09', name: 'Analyze', model: 'Sonnet', final: true },
 ];
 
 const PRINCIPLES = [
+  { title: 'Source-Blind Framing', desc: 'Framing classified from language, not source identity. The AI never sees outlet names.' },
+  { title: 'Coverage Gap Detection', desc: 'Impact vs coverage delta reveals what the media is overlooking.' },
+  { title: 'Multi-Model Architecture', desc: 'Fast models triage. The best model analyzes. Cost, speed, depth — balanced.' },
+];
+
+const FEEDS = [
+  { lean: 'left', leanLabel: 'Left', domain: 'nytimes.com/rss', count: '12 articles' },
+  { lean: 'left', leanLabel: 'Left', domain: 'washingtonpost.com/rss', count: '9 articles' },
+  { lean: 'center', leanLabel: 'Center', domain: 'apnews.com/feed', count: '18 articles' },
+  { lean: 'center', leanLabel: 'Center', domain: 'reuters.com/rss', count: '15 articles' },
+  { lean: 'right', leanLabel: 'Right', domain: 'foxnews.com/rss', count: '11 articles' },
+  { lean: 'right', leanLabel: 'Right', domain: 'dailywire.com/rss', count: '8 articles' },
+  { lean: 'center', leanLabel: '...', domain: '34 more feeds', count: '', faded: true },
+];
+
+const SCATTERED_DOTS = [
+  { top: '25%', left: '18%', cat: 'politics' },
+  { top: '42%', left: '12%', cat: 'world' },
+  { top: '33%', left: '25%', cat: 'politics' },
+  { top: '68%', left: '45%', cat: 'economy' },
+  { top: '55%', left: '52%', cat: 'world' },
+  { top: '22%', left: '72%', cat: 'science' },
+  { top: '78%', left: '20%', cat: 'politics' },
+  { top: '45%', left: '78%', cat: 'economy' },
+  { top: '62%', left: '32%', cat: 'world' },
+  { top: '38%', left: '58%', cat: 'science' },
+  { top: '82%', left: '65%', cat: 'politics' },
+  { top: '18%', left: '42%', cat: 'economy' },
+  { top: '72%', left: '82%', cat: 'world' },
+  { top: '52%', left: '22%', cat: 'science' },
+  { top: '15%', left: '55%', cat: 'politics' },
+  { top: '85%', left: '38%', cat: 'economy' },
+  { top: '28%', left: '88%', cat: 'world' },
+  { top: '65%', left: '68%', cat: 'science' },
+];
+
+const CLUSTERS = [
   {
-    icon: '\u25C7',
-    title: 'Source-Blind Framing',
-    desc: "Framing is classified from language patterns, not source identity. The system doesn\u2019t know which outlet is \u201Cleft\u201D or \u201Cright\u201D until after analysis.",
+    cat: 'p', catFull: 'politics',
+    ring: { top: '15%', left: '10%', w: 100, h: 80 },
+    dots: [
+      { top: '28%', left: '18%' },
+      { top: '22%', left: '26%' },
+      { top: '32%', left: '22%' },
+      { top: '26%', left: '14%' },
+    ],
+    label: 'FBI Director Vote',
+    labelPos: { top: '48%', left: '10%' },
+    labelBg: 'rgba(192,57,43,0.08)',
   },
   {
-    icon: '\u25C8',
-    title: 'Coverage Gap Detection',
-    desc: 'Every topic gets an impact score and a coverage score. The delta between them reveals what the media ecosystem is over- or under-covering.',
+    cat: 'w', catFull: 'world',
+    ring: { top: '10%', left: '55%', w: 110, h: 85 },
+    dots: [
+      { top: '22%', left: '62%' },
+      { top: '18%', left: '72%' },
+      { top: '28%', left: '68%' },
+      { top: '24%', left: '58%' },
+      { top: '16%', left: '66%' },
+    ],
+    label: 'Foreign Aid Freeze',
+    labelPos: { top: '44%', left: '55%' },
+    labelBg: 'rgba(43,76,126,0.08)',
   },
   {
-    icon: '\u25C6',
-    title: 'Multi-Model Architecture',
-    desc: 'Fast models handle ingestion and triage. The most capable model is reserved for final analysis — balancing cost, speed, and depth.',
+    cat: 'e', catFull: 'economy',
+    ring: { top: '58%', left: '30%', w: 90, h: 75 },
+    dots: [
+      { top: '68%', left: '38%' },
+      { top: '72%', left: '45%' },
+      { top: '65%', left: '42%' },
+    ],
+    label: 'Fed Rate Pause',
+    labelPos: { top: '84%', left: '30%' },
+    labelBg: 'rgba(200,150,62,0.08)',
   },
 ];
 
-const PHASE1_COLS = [
-  { boxType: 'source', label: '40+ RSS Feeds', desc: 'Left, center, and right outlets pulled concurrently via httpx async and feedparser every 15 minutes.' },
-  { boxType: 'process', label: 'Normalize and Dedup', desc: 'URLs are canonicalized and duplicates dropped before storage.' },
-  { boxType: 'process', label: 'Embed \u2192 384d Vectors', desc: 'Each headline is embedded into 384-dimensional semantic space using text-embedding-3-small, stored in pgvector.' },
-  { boxType: 'ai', label: 'HDBSCAN Cluster', desc: 'Density-based clustering discovers story groups by cosine similarity. Oversized clusters are split, near-duplicates merged.' },
-  { boxType: 'ai', label: 'Label \u00B7 Haiku', desc: 'Each cluster gets a neutral wire-service headline. Vague or truncated labels are caught and rewritten.' },
+const HEADLINES = [
+  { lean: 'left', src: 'NYT', text: '"Trump\'s Aid Freeze Threatens Millions Abroad, Critics Warn"' },
+  { lean: 'left', src: 'MSNBC', text: '"Devastating Foreign Aid Cuts Leave Allies Scrambling"' },
+  { lean: 'center', src: 'AP', text: '"US Halts Foreign Aid Disbursements Pending Review"' },
+  { lean: 'center', src: 'Reuters', text: '"Trump Administration Pauses Foreign Assistance Programs"' },
+  { lean: 'right', src: 'Fox News', text: '"Trump Puts America First, Freezes Wasteful Foreign Aid"' },
+  { lean: 'right', src: 'Daily Wire', text: '"Trump Delivers on Promise to Review Bloated Aid Programs"' },
 ];
 
-const PHASE2_COLS = [
-  { boxType: 'ai', label: 'Validate \u00B7 GPT-4o-mini', desc: 'Two-step filter with a 30-day recency window. Regex pre-filter catches historical events; the model handles ambiguous cases. Only current topics advance.' },
-  { boxType: 'process', label: 'Score: Impact 0-100', desc: '5-factor weighted model: policy scope, population affected, economic magnitude, institutional precedent, and irreversibility. Scored by Claude Haiku.' },
-  { boxType: 'process', label: 'Score: Coverage 0-100', desc: 'Computed from signal data: article volume, source diversity, recency, velocity, VADER sentiment, and attention percentile. No AI needed.' },
-  { boxType: 'ai', label: 'Select \u00B7 GPT-4o-mini', desc: 'Editorial triage. Picks up to 10 stories per cycle, prioritizing high impact with multi-source coverage, increasing velocity, and framing divergence. Also flags stale analyses for re-generation.' },
+const FACTORS = [
+  { label: 'Policy Scope', pct: '85%', score: '17/20' },
+  { label: 'Population Affected', pct: '90%', score: '27/30' },
+  { label: 'Economic Magnitude', pct: '80%', score: '20/25' },
+  { label: 'Institutional Precedent', pct: '73%', score: '11/15' },
+  { label: 'Irreversibility', pct: '50%', score: '5/10' },
 ];
 
-/* ── Sub-components ── */
+const FRAMES = [
+  {
+    lean: 'left', src: 'Source A (identity hidden)',
+    html: '"The freeze <em style="font-style:normal;background:rgba(200,150,62,0.15);padding:1px 4px;border-radius:2px">threatens millions</em> of vulnerable people who depend on U.S. assistance programs, aid workers say"',
+    tag: 'Alarmist', tagColor: '#B45309', tagBg: 'rgba(180,83,9,0.08)',
+  },
+  {
+    lean: 'center', src: 'Source B (identity hidden)',
+    html: '"The administration <em style="font-style:normal;background:rgba(200,150,62,0.15);padding:1px 4px;border-radius:2px">announced a review</em> of all foreign assistance programs, pausing disbursements"',
+    tag: 'Factual / Wire', tagColor: 'var(--ink-muted)', tagBg: 'rgba(0,0,0,0.04)',
+  },
+  {
+    lean: 'right', src: 'Source C (identity hidden)',
+    html: '"The president <em style="font-style:normal;background:rgba(200,150,62,0.15);padding:1px 4px;border-radius:2px">delivered on his promise</em> to ensure taxpayer dollars serve American interests first"',
+    tag: 'Policy / Regulatory', tagColor: 'var(--accent-blue-deep)', tagBg: 'rgba(27,49,85,0.08)',
+  },
+];
 
-function Connector() {
-  return <div className="hiw-connector" />;
-}
+const INPUTS = [
+  { icon: 'HDLN', text: '38 headlines from 22 sources' },
+  { icon: 'BODY', text: 'Full text from 8 selected articles' },
+  { icon: 'FRAME', text: '7 framing classifications per article' },
+  { icon: 'SCORE', text: 'Impact: 80 / Coverage: 72' },
+  { icon: 'LEAN', text: '3 left, 2 center, 3 right sources' },
+];
 
-function PipelineNode({ label, type }) {
-  const styles = {
-    src: { background: '#F3F4F6', color: 'var(--ink-muted)' },
-    proc: { background: 'rgba(43,76,126,0.08)', color: 'var(--accent-blue-deep)' },
-    'ai-light': { background: 'rgba(200,150,62,0.08)', color: 'var(--accent-gold)' },
-    'ai-heavy': { background: 'var(--accent-blue-deep)', color: '#fff' },
-  };
-  return (
-    <div className="hiw-pipe-node" style={{
-      padding: '10px 16px',
-      borderRadius: 6,
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 12,
-      fontWeight: 500,
-      textAlign: 'center',
-      whiteSpace: 'nowrap',
-      ...styles[type],
-    }}>
-      {label}
-    </div>
-  );
-}
-
-function PhaseSection({ num, title, sub, warm, children }) {
-  return (
-    <div className={`hiw-phase${warm ? ' hiw-phase-warm' : ''}`} style={{
-      padding: '72px 48px',
-      background: warm ? 'var(--bg-warm)' : undefined,
-    }}>
-      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-        <div style={{ marginBottom: 'var(--space-xl)' }}>
-          <div style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            fontWeight: 500,
-            color: 'var(--accent-gold)',
-            textTransform: 'uppercase',
-            letterSpacing: '1.5px',
-            marginBottom: 'var(--space-xs)',
-          }}>
-            {num}
-          </div>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 800,
-            fontSize: 32,
-            letterSpacing: '-0.5px',
-            marginBottom: 'var(--space-xs)',
-          }}>
-            {title}
-          </div>
-          <div style={{
-            fontSize: 16,
-            lineHeight: 1.6,
-            color: 'var(--ink-secondary)',
-            maxWidth: 640,
-          }}>
-            {sub}
-          </div>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function FlowDiagram({ warm, children }) {
-  return (
-    <div className="hiw-flow-diagram" style={{
-      background: warm ? '#fff' : 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 'var(--radius)',
-      padding: 'var(--space-xl) var(--space-lg)',
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function FlowCol({ boxType, label, desc, isLast }) {
-  const BOX_STYLES = {
-    source: { borderColor: '#D1D5DB', background: '#F9FAFB', labelColor: 'var(--ink-muted)' },
-    process: { borderColor: 'var(--accent-blue)', background: 'rgba(43,76,126,0.04)', labelColor: 'var(--accent-blue-deep)' },
-    ai: { borderColor: 'var(--accent-gold)', background: 'rgba(200,150,62,0.04)', labelColor: 'var(--accent-gold)' },
-  };
-  const s = BOX_STYLES[boxType] || BOX_STYLES.process;
-
-  return (
-    <div className={`hiw-flow-col${isLast ? ' hiw-flow-col-last' : ''}`}>
-      <div style={{
-        border: `1px solid ${s.borderColor}`,
-        background: s.background,
-        borderRadius: 8,
-        padding: '16px 18px',
-        width: '100%',
-        marginBottom: 12,
-        minHeight: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 13,
-          fontWeight: 500,
-          letterSpacing: '0.3px',
-          color: s.labelColor,
-        }}>
-          {label}
-        </span>
-      </div>
-      <div style={{
-        fontSize: 13,
-        color: 'var(--ink-muted)',
-        lineHeight: 1.5,
-      }}>
-        {desc}
-      </div>
-    </div>
-  );
-}
-
-function SplitBox({ borderColor, bg, labelColor, label, desc }) {
-  return (
-    <div style={{
-      border: `1px solid ${borderColor}`,
-      background: bg,
-      borderRadius: 8,
-      padding: '20px 24px',
-    }}>
-      <span style={{
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 13,
-        fontWeight: 500,
-        letterSpacing: '0.3px',
-        color: labelColor,
-        display: 'block',
-        marginBottom: 6,
-      }}>
-        {label}
-      </span>
-      <div style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-        {desc}
-      </div>
-    </div>
-  );
-}
+const ANALYSIS_SECTIONS = [
+  { label: 'Lede', text: 'The Trump administration has frozen foreign aid disbursements across multiple agencies pending a comprehensive policy review...' },
+  { label: 'Narrative', text: 'Left-leaning outlets frame the freeze as a humanitarian crisis, while conservative sources cast it as fiscal responsibility...' },
+  { label: 'Source Spectrum', text: 'NYT and WaPo emphasize impact on recipients. AP and Reuters report procedural details. Fox and Daily Wire highlight cost savings...' },
+  { label: 'Bottom Line', text: 'The freeze is real, the scope is disputed, and the framing reveals more about each outlet than about the policy itself.' },
+];

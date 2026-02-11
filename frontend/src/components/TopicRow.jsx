@@ -24,24 +24,18 @@ function formatDate(story) {
   const d = new Date(raw);
   const now = new Date();
 
-  // Compare dates in local time
-  const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.round((nowDate - dDate) / 86400000);
+  // Determine start of the current week (Monday)
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-
-  // Same year: "Feb 9"
-  if (d.getFullYear() === now.getFullYear()) {
+  // If topic date is within the current week: "Feb 9"
+  if (d >= weekStart) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  // Different year: "Dec 3 '24"
-  const month = d.toLocaleDateString('en-US', { month: 'short' });
-  const day = d.getDate();
-  const year = String(d.getFullYear()).slice(2);
-  return `${month} ${day} '${year}`;
+  // Older than current week: "Feb 9, 2026"
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function BadgeInline({ story }) {
@@ -56,6 +50,19 @@ function BadgeInline({ story }) {
     return <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>trending</span>;
   }
   return null;
+}
+
+function Separator() {
+  return (
+    <span style={{
+      display: 'inline-block',
+      width: 1,
+      height: 10,
+      background: 'var(--border)',
+      flexShrink: 0,
+      verticalAlign: 'middle',
+    }} />
+  );
 }
 
 export default function TopicRow({ story, index = 0 }) {
@@ -75,7 +82,7 @@ export default function TopicRow({ story, index = 0 }) {
           gap: 24,
           padding: '18px 0 18px 16px',
           borderLeft: `3px solid ${groupColor}`,
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid #f0eeea',
           transition: 'all 0.2s ease',
           cursor: 'pointer',
           opacity: 0,
@@ -83,7 +90,7 @@ export default function TopicRow({ story, index = 0 }) {
         }}
         onMouseEnter={e => {
           e.currentTarget.style.borderLeftWidth = '5px';
-          e.currentTarget.style.background = 'rgba(0,0,0,0.015)';
+          e.currentTarget.style.background = 'rgba(0,0,0,0.012)';
         }}
         onMouseLeave={e => {
           e.currentTarget.style.borderLeftWidth = '3px';
@@ -114,25 +121,20 @@ export default function TopicRow({ story, index = 0 }) {
             <span>{story.article_count || 0} articles</span>
             <span>&middot;</span>
             <span>{story.source_count || '\u2014'} sources</span>
+            <Separator />
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 12,
+            }}>
+              {formatDate(story)}
+            </span>
             {badge && (
               <>
-                <span>&middot;</span>
+                <Separator />
                 {badge}
               </>
             )}
           </div>
-        </div>
-
-        {/* Date column */}
-        <div className="topic-row-date" style={{
-          minWidth: 72,
-          textAlign: 'right',
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11,
-          color: 'var(--ink-muted)',
-          flexShrink: 0,
-        }}>
-          {formatDate(story)}
         </div>
 
         {/* Score columns */}

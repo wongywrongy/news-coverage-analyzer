@@ -3,40 +3,21 @@
 import Link from 'next/link';
 import { getGroupLabel, getGroupColor, parseTrend, computeTrendDirection } from '../lib/constants';
 
-function getCatClass(category) {
-  const label = getGroupLabel(category);
-  if (label === 'Politics & Law') return 'politics';
-  if (label === 'World & Security') return 'world';
-  if (label === 'Economy & Business') return 'economy';
-  return 'science';
+function getDisplayLabel(category) {
+  return getGroupLabel(category).replace(/&/g, 'and');
 }
 
-function BadgePill({ story }) {
+function getTag(story) {
   const biasSpread = story.bias_spread || 0;
+  if (biasSpread >= 1.5) return 'divergent';
   const trend = parseTrend(story);
   const trendDir = computeTrendDirection(trend);
-
-  if (biasSpread >= 1.5) {
-    return (
-      <span className="ts-badge ts-badge-divergent">
-        High framing divergence
-      </span>
-    );
-  }
-
-  if (trendDir === 'trending') {
-    return (
-      <span className="ts-badge ts-badge-trending">
-        Trending
-      </span>
-    );
-  }
-
+  if (trendDir === 'trending') return 'trending';
   return null;
 }
 
-function MetaDivider() {
-  return <span className="ts-divider" />;
+function MetaSep() {
+  return <span className="meta-sep" />;
 }
 
 export default function TopStories({ stories }) {
@@ -54,7 +35,9 @@ export default function TopStories({ stories }) {
         {/* Header */}
         <div className="ts-header" style={{
           paddingTop: 12,
-          marginBottom: 'var(--space-sm)',
+          marginBottom: 'var(--space-md)',
+          paddingBottom: 'var(--space-sm)',
+          borderBottom: '2px solid var(--ink)',
         }}>
           <span className="ts-label" style={{
             fontSize: 11,
@@ -63,7 +46,7 @@ export default function TopStories({ stories }) {
             letterSpacing: '1.5px',
             color: 'var(--ink)',
           }}>
-            Top Stories Right Now
+            Top Stories
           </span>
         </div>
 
@@ -73,10 +56,8 @@ export default function TopStories({ stories }) {
           gridTemplateColumns: '1.4fr 1fr',
           animation: 'fadeUp 0.5s ease both',
         }}>
-          {/* Lead story */}
           <LeadStory story={lead} />
 
-          {/* Side stories */}
           <div className="ts-side" style={{
             borderLeft: '1px solid var(--border)',
             display: 'flex',
@@ -93,8 +74,9 @@ export default function TopStories({ stories }) {
 }
 
 function LeadStory({ story }) {
-  const groupLabel = getGroupLabel(story.category);
-  const groupColor = getGroupColor(story.category);
+  const label = getDisplayLabel(story.category);
+  const color = getGroupColor(story.category);
+  const tag = getTag(story);
 
   return (
     <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -105,15 +87,15 @@ function LeadStory({ story }) {
         flexDirection: 'column',
         height: '100%',
       }}>
-        <div style={{
-          fontSize: 10,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: groupColor,
-          marginBottom: 'var(--space-xs)',
-        }}>
-          {groupLabel}
+        {/* Category + tag row */}
+        <div className="lead-cat-row">
+          <span className="lead-cat" style={{ color }}>{label}</span>
+          {tag === 'trending' && (
+            <span className="tag-pill trending">Trending</span>
+          )}
+          {tag === 'divergent' && (
+            <span className="tag-pill divergent">High divergence</span>
+          )}
         </div>
 
         <h2 style={{
@@ -139,29 +121,10 @@ function LeadStory({ story }) {
           </p>
         )}
 
-        <div className="meta-row" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-sm)',
-          marginTop: 'auto',
-        }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            color: 'var(--ink-muted)',
-          }}>
-            {story.article_count} articles &middot; {story.source_count || '\u2014'} sources
-          </span>
-          <MetaDivider />
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            color: 'var(--ink-muted)',
-          }}>
-            Impact <strong style={{ color: 'var(--ink-secondary)', fontSize: 13 }}>{story.impact_score}</strong>
-          </span>
-          <MetaDivider />
-          <BadgePill story={story} />
+        <div className="lead-meta" style={{ marginTop: 'auto' }}>
+          <span className="mono">{story.article_count} articles</span>
+          <MetaSep />
+          <span className="mono">{story.source_count || '\u2014'} sources</span>
         </div>
       </div>
     </Link>
@@ -169,8 +132,9 @@ function LeadStory({ story }) {
 }
 
 function SideStory({ story, isLast }) {
-  const groupLabel = getGroupLabel(story.category);
-  const groupColor = getGroupColor(story.category);
+  const label = getDisplayLabel(story.category);
+  const color = getGroupColor(story.category);
+  const tag = getTag(story);
 
   return (
     <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex' }}>
@@ -182,15 +146,15 @@ function SideStory({ story, isLast }) {
         flex: 1,
         borderBottom: isLast ? 'none' : '1px solid var(--border)',
       }}>
-        <div style={{
-          fontSize: 10,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: groupColor,
-          marginBottom: 'var(--space-xs)',
-        }}>
-          {groupLabel}
+        {/* Category + tag row */}
+        <div className="side-cat-row">
+          <span className="side-cat" style={{ color }}>{label}</span>
+          {tag === 'trending' && (
+            <span className="side-tag-pill trending">Trending</span>
+          )}
+          {tag === 'divergent' && (
+            <span className="side-tag-pill divergent">High divergence</span>
+          )}
         </div>
 
         <h3 style={{
@@ -205,28 +169,8 @@ function SideStory({ story, isLast }) {
           {story.headline || story.topic}
         </h3>
 
-        <div className="meta-row" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-sm)',
-          marginTop: 'var(--space-sm)',
-        }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            color: 'var(--ink-muted)',
-          }}>
-            {story.article_count} articles &middot; {story.source_count || '\u2014'} sources
-          </span>
-          <MetaDivider />
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            color: 'var(--ink-muted)',
-          }}>
-            Impact <strong style={{ color: 'var(--ink-secondary)', fontSize: 13 }}>{story.impact_score}</strong>
-          </span>
-          <BadgePill story={story} />
+        <div className="side-meta">
+          {story.article_count} articles &middot; {story.source_count || '\u2014'} sources
         </div>
       </div>
     </Link>

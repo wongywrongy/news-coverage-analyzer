@@ -2,37 +2,30 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import TopicRow from './TopicRow';
 import Footer from './Footer';
 import {
   CATEGORY_GROUPS,
   getPrimaryCategory,
   getGroupForCategory,
-  getGroupLabel,
-  getGroupColor,
-  getCoverageScore,
 } from '../lib/constants';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 15;
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'impact', label: 'Highest impact' },
+  { value: 'impact', label: 'Impact: high to low' },
   { value: 'articles', label: 'Most articles' },
 ];
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-}
+const TABS = [
+  { key: null, label: 'All' },
+  ...CATEGORY_GROUPS.map(g => ({ key: g.key, label: g.label.replace(/&/g, 'and') })),
+];
 
 function sortStories(stories, sortKey) {
   const sorted = [...stories];
   switch (sortKey) {
-    case 'oldest':
-      sorted.sort((a, b) => new Date(a.first_seen || 0) - new Date(b.first_seen || 0));
-      break;
     case 'impact':
       sorted.sort((a, b) => (b.impact_score || 0) - (a.impact_score || 0));
       break;
@@ -51,46 +44,42 @@ export default function Archive({ stories }) {
   const [selGroup, setSelGroup] = useState(null);
   const [sort, setSort] = useState('newest');
   const [search, setSearch] = useState('');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     let result = stories;
 
-    // Category filter
     if (selGroup) {
       result = result.filter(s =>
         getGroupForCategory(getPrimaryCategory(s.category)) === selGroup
       );
     }
 
-    // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter(s => (s.topic || '').toLowerCase().includes(q));
     }
 
-    // Sort
-    result = sortStories(result, sort);
-
-    return result;
+    return sortStories(result, sort);
   }, [stories, selGroup, sort, search]);
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safeP = Math.min(page, totalPages);
+  const visible = filtered.slice((safeP - 1) * PAGE_SIZE, safeP * PAGE_SIZE);
 
   const handleSearch = useCallback((e) => {
     setSearch(e.target.value);
-    setVisibleCount(PAGE_SIZE);
+    setPage(1);
   }, []);
 
   const handleCategoryChange = useCallback((groupKey) => {
     setSelGroup(groupKey);
-    setVisibleCount(PAGE_SIZE);
+    setPage(1);
   }, []);
 
   const handleSortChange = useCallback((e) => {
     setSort(e.target.value);
-    setVisibleCount(PAGE_SIZE);
+    setPage(1);
   }, []);
 
   const hasFilters = selGroup || search.trim();
@@ -119,14 +108,14 @@ export default function Archive({ stories }) {
           textDecoration: 'none',
           letterSpacing: '-0.5px',
         }}>
-          ClearSignal
+          Clear<span style={{ color: 'var(--accent-gold)' }}>Signal</span>
         </Link>
         <span style={{
           fontSize: 12,
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '1.5px',
-          color: 'var(--ink-muted)',
+          color: 'var(--accent-blue-deep)',
         }}>
           Archive
         </span>
@@ -138,162 +127,138 @@ export default function Archive({ stories }) {
         margin: '0 auto',
         padding: '48px 48px 0',
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 8 }}>
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 900,
-            fontSize: 42,
-            letterSpacing: '-1px',
-            lineHeight: 1.1,
-          }}>
-            Archive
-          </h1>
-          <span style={{
-            fontSize: 13,
-            color: 'var(--ink-muted)',
-            fontFamily: "'JetBrains Mono', monospace",
-            background: 'var(--warm-bg)',
-            padding: '4px 12px',
-            borderRadius: 20,
-          }}>
-            {stories.length} topics
-          </span>
-        </div>
-        <p style={{
-          fontSize: 17,
-          lineHeight: 1.5,
-          color: 'var(--ink-secondary)',
-          maxWidth: 520,
-          marginBottom: 32,
-        }}>
-          Every topic ClearSignal has analyzed.
-        </p>
-      </header>
-
-      {/* Controls */}
-      <div style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        padding: '0 48px 24px',
-      }}>
-        <div className="archive-controls" style={{
+        <div className="archive-header" style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 16,
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
           flexWrap: 'wrap',
+          gap: 16,
+          paddingBottom: 16,
+          borderBottom: '2px solid var(--ink)',
         }}>
-          {/* Category pills */}
-          <div className="archive-pills" style={{
-            display: 'flex',
-            gap: 6,
-            flex: 1,
-            minWidth: 0,
-          }}>
-            <button
-              onClick={() => handleCategoryChange(null)}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 20,
-                border: '1px solid',
-                borderColor: !selGroup ? 'var(--accent-blue-deep)' : 'var(--border)',
-                background: !selGroup ? 'var(--accent-blue-deep)' : 'transparent',
-                color: !selGroup ? '#fff' : 'var(--ink-secondary)',
-                fontSize: 13,
-                fontWeight: 500,
-                fontFamily: "'DM Sans', sans-serif",
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              All
-            </button>
-            {CATEGORY_GROUPS.map(g => {
-              const active = selGroup === g.key;
-              return (
-                <button
-                  key={g.key}
-                  onClick={() => handleCategoryChange(active ? null : g.key)}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: 20,
-                    border: '1px solid',
-                    borderColor: active ? g.color : 'var(--border)',
-                    background: active ? g.color : 'transparent',
-                    color: active ? '#fff' : 'var(--ink-secondary)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    fontFamily: "'DM Sans', sans-serif",
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {g.label}
-                </button>
-              );
-            })}
+          {/* Left: title + count */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+            <h1 style={{
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 900,
+              fontSize: 36,
+              letterSpacing: '-1px',
+              lineHeight: 1.1,
+            }}>
+              Archive
+            </h1>
+            <span style={{
+              fontSize: 12,
+              color: 'var(--ink-muted)',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {stories.length} topics
+            </span>
           </div>
 
-          {/* Sort dropdown */}
-          <select
-            value={sort}
-            onChange={handleSortChange}
-            style={{
-              padding: '7px 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border)',
-              background: 'var(--bg-card)',
-              color: 'var(--ink)',
-              fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            {SORT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-
-          {/* Search input */}
-          <div style={{ position: 'relative', minWidth: 200 }}>
-            <svg
+          {/* Right: sort + search */}
+          <div className="archive-controls" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            <select
+              value={sort}
+              onChange={handleSortChange}
               style={{
-                position: 'absolute',
-                left: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 14,
-                height: 14,
-                color: 'var(--ink-muted)',
-              }}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search topics..."
-              value={search}
-              onChange={handleSearch}
-              style={{
-                width: '100%',
-                padding: '7px 12px 7px 30px',
+                padding: '7px 12px',
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--border)',
                 background: 'var(--bg-card)',
                 color: 'var(--ink)',
                 fontSize: 13,
                 fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer',
                 outline: 'none',
               }}
-            />
+            >
+              {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+
+            <div style={{ position: 'relative', width: 180 }}>
+              <svg
+                style={{
+                  position: 'absolute', left: 10, top: '50%',
+                  transform: 'translateY(-50%)', width: 14, height: 14,
+                  color: 'var(--ink-muted)',
+                }}
+                fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={handleSearch}
+                style={{
+                  width: '100%',
+                  padding: '7px 12px 7px 30px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card)',
+                  color: 'var(--ink)',
+                  fontSize: 13,
+                  fontFamily: "'DM Sans', sans-serif",
+                  outline: 'none',
+                }}
+              />
+            </div>
           </div>
+        </div>
+      </header>
+
+      {/* Category tabs */}
+      <div style={{
+        maxWidth: 1280,
+        margin: '0 auto',
+        padding: '0 48px',
+      }}>
+        <div className="archive-tabs" style={{
+          display: 'flex',
+          gap: 4,
+          borderBottom: '2px solid var(--border)',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          {TABS.map(tab => {
+            const isActive = selGroup === tab.key;
+            return (
+              <button
+                key={tab.key ?? 'all'}
+                onClick={() => handleCategoryChange(tab.key)}
+                style={{
+                  padding: '14px 24px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  color: isActive ? 'var(--accent-blue-deep)' : 'var(--ink-muted)',
+                  cursor: 'pointer',
+                  marginBottom: -2,
+                  transition: 'all 0.2s',
+                  background: 'none',
+                  border: 'none',
+                  borderBottomWidth: 2,
+                  borderBottomStyle: 'solid',
+                  borderBottomColor: isActive ? 'var(--accent-blue-deep)' : 'transparent',
+                  fontFamily: "'DM Sans', sans-serif",
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -303,12 +268,11 @@ export default function Archive({ stories }) {
         margin: '0 auto',
         padding: '0 48px 80px',
       }}>
-        {/* Results count */}
-        {(selGroup || search.trim()) && (
+        {/* Results count when filtered */}
+        {hasFilters && (
           <div style={{
-            fontSize: 13,
-            color: 'var(--ink-muted)',
-            marginBottom: 16,
+            fontSize: 13, color: 'var(--ink-muted)',
+            padding: '16px 0 0',
           }}>
             {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
           </div>
@@ -339,7 +303,7 @@ export default function Archive({ stories }) {
             </p>
             {hasFilters && (
               <button
-                onClick={() => { setSelGroup(null); setSearch(''); }}
+                onClick={() => { setSelGroup(null); setSearch(''); setPage(1); }}
                 style={{
                   background: 'transparent',
                   border: '1px solid var(--border)',
@@ -367,45 +331,73 @@ export default function Archive({ stories }) {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {visible.map((story, i) => (
-                <ArchiveRow key={story.id} story={story} index={i} />
+                <TopicRow key={story.id} story={story} index={i} />
               ))}
             </div>
 
-            {hasMore && (
-              <button
-                onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: 14,
-                  marginTop: 12,
-                  background: 'transparent',
-                  border: '1px dashed var(--border)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--ink-muted)',
-                  fontSize: 12,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontWeight: 500,
-                  letterSpacing: '0.03em',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--accent-blue)';
-                  e.currentTarget.style.color = 'var(--accent-blue)';
-                  e.currentTarget.style.background = 'rgba(43,76,126,0.03)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.color = 'var(--ink-muted)';
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                Show more ({filtered.length - visibleCount} remaining)
-              </button>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 6,
+                paddingTop: 24,
+                borderTop: '1px solid var(--border)',
+                marginTop: 0,
+              }}>
+                {buildPageNumbers(safeP, totalPages).map((p, i) => {
+                  if (p === '...') {
+                    return (
+                      <span key={`ellipsis-${i}`} style={{
+                        width: 36, height: 36,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, color: 'var(--ink-muted)',
+                      }}>...</span>
+                    );
+                  }
+                  const isActive = p === safeP;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      style={{
+                        width: 36, height: 36,
+                        borderRadius: 6,
+                        border: isActive ? 'none' : '1px solid var(--border)',
+                        background: isActive ? 'var(--ink)' : 'var(--bg-card)',
+                        color: isActive ? '#fff' : 'var(--ink-secondary)',
+                        fontSize: 13,
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+                {safeP < totalPages && (
+                  <button
+                    onClick={() => setPage(safeP + 1)}
+                    style={{
+                      width: 36, height: 36,
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-card)',
+                      color: 'var(--ink-secondary)',
+                      fontSize: 13,
+                      fontFamily: "'DM Sans', sans-serif",
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    &rarr;
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
@@ -416,160 +408,24 @@ export default function Archive({ stories }) {
   );
 }
 
-function ArchiveRow({ story, index }) {
-  const groupLabel = getGroupLabel(story.category);
-  const groupColor = getGroupColor(story.category);
-  const primaryCat = getPrimaryCategory(story.category);
-  const impactScore = Math.round(story.impact_score || 0);
+function buildPageNumbers(current, total) {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
 
-  return (
-    <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-      <div
-        className="archive-row"
-        style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '14px 20px',
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 16,
-          alignItems: 'center',
-          transition: 'all 0.2s',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          opacity: 0,
-          animation: `fadeUp 0.3s ease ${Math.min(index * 0.02, 0.5)}s both`,
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor = '#ccc';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
-          const bar = e.currentTarget.querySelector('.archive-left-bar');
-          if (bar) bar.style.width = '5px';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor = 'var(--border)';
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.transform = 'translateY(0)';
-          const bar = e.currentTarget.querySelector('.archive-left-bar');
-          if (bar) bar.style.width = '3px';
-        }}
-      >
-        {/* Left color bar */}
-        <div
-          className="archive-left-bar"
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 3,
-            background: groupColor,
-            borderRadius: '8px 0 0 8px',
-            transition: 'width 0.2s',
-          }}
-        />
+  const pages = [];
+  pages.push(1);
 
-        {/* Content */}
-        <div className="archive-row-content" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          paddingLeft: 4,
-          minWidth: 0,
-        }}>
-          {/* Category pill */}
-          <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.6px',
-            padding: '2px 8px',
-            borderRadius: 3,
-            color: groupColor,
-            background: `${groupColor}14`,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}>
-            {primaryCat}
-          </span>
+  if (current > 3) pages.push('...');
 
-          {/* Topic title */}
-          <span className="archive-topic-title" style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 600,
-            fontSize: 15,
-            lineHeight: 1.3,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            minWidth: 0,
-          }}>
-            {story.topic}
-          </span>
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
 
-          {/* Meta: article count + date */}
-          <div className="archive-row-meta" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            flexShrink: 0,
-          }}>
-            <span style={{
-              fontSize: 12,
-              color: 'var(--ink-muted)',
-              whiteSpace: 'nowrap',
-            }}>
-              {story.article_count || 0} articles
-            </span>
-            <span style={{
-              fontSize: 12,
-              color: 'var(--ink-muted)',
-              fontFamily: "'JetBrains Mono', monospace",
-              whiteSpace: 'nowrap',
-            }}>
-              {formatDate(story.first_seen)}
-            </span>
-          </div>
-        </div>
+  if (current < total - 2) pages.push('...');
 
-        {/* Impact score */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          flexShrink: 0,
-        }}>
-          <div style={{
-            width: 48,
-            height: 3,
-            background: 'var(--border)',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${impactScore}%`,
-              borderRadius: 2,
-              background: '#AEAEAE',
-              transition: 'width 0.4s ease',
-            }} />
-          </div>
-          <div style={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 800,
-            fontSize: 20,
-            lineHeight: 1,
-            color: '#6B6B6B',
-            minWidth: 28,
-            textAlign: 'right',
-          }}>
-            {impactScore}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+  pages.push(total);
+  return pages;
 }

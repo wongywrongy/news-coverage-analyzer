@@ -411,7 +411,7 @@ export async function getArchiveStories() {
 
     const { data, error } = await supabase
       .from('stories')
-      .select('id, topic, category, impact_score, coverage_score, attention_score, article_count, source_count, first_seen, last_updated, rank_score, trend, status')
+      .select('id, topic, category, impact_score, coverage_score, attention_score, article_count, source_count, first_seen, last_updated, last_article_at, rank_score, trend, status, bias_spread')
       .in('id', analyzedIds)
       .order('first_seen', { ascending: false });
 
