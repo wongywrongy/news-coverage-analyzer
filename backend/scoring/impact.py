@@ -13,30 +13,40 @@ level, and insufficient-data flags.
 Cost: ~$0.002 per story (Haiku input + output tokens).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from anthropic import Anthropic
 
 from config.settings import settings
+from constants import ENTITY_BOOST_CAP, ENTITY_BOOST_FACTOR, RESCORE_GROWTH_THRESHOLD, RESCORE_HOURS
 from db import queries as db
+from db.queries import get_entities_for_topic, get_top_connected_entities
 
 logger = logging.getLogger(__name__)
 
-_HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_HAIKU_MODEL = settings.haiku_model
 _MAX_TOKENS = 1024
 _MAX_HEADLINES = 50
-_RESCORE_HOURS = 6.0
-_GROWTH_THRESHOLD = 0.20  # 20% article count growth triggers rescore
+_RESCORE_HOURS = RESCORE_HOURS
+_GROWTH_THRESHOLD = RESCORE_GROWTH_THRESHOLD
 
 _SYSTEM_PROMPT = (
-    "You are a news significance scorer. You evaluate the real-world impact "
-    "of a news story using 5 measurable factors. You are descriptive, not "
-    "prescriptive. You do not judge whether a story 'deserves' coverage — "
-    "you estimate its tangible impact on people and systems."
+    "You are a news significance scorer for a US-focused news analysis platform. "
+    "You evaluate the real-world impact of a news story using 5 measurable factors, "
+    "with particular attention to how it affects the United States and US interests. "
+    "You are descriptive, not prescriptive. You do not judge whether a story "
+    "'deserves' coverage — you estimate its tangible impact on people and systems.\n\n"
+    "AUDIENCE CONTEXT: Your scores should reflect importance to a US audience. "
+    "For international stories, weight the US connection: direct effects on US "
+    "policy, economy, security, or citizens score higher than events with no "
+    "US nexus. Global events that affect world markets, alliances, or set "
+    "precedents for US issues are still significant."
 )
 
 # ─── helpers ────────────────────────────────────────────────────────────────────
@@ -71,8 +81,8 @@ def _needs_scoring(story: dict) -> bool:
             except ValueError:
                 return True
         if last_scored.tzinfo is None:
-            last_scored = last_scored.replace(tzinfo=timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - last_scored).total_seconds() / 3600
+            last_scored = last_scored.replace(tzinfo=UTC)
+        age_hours = (datetime.now(UTC) - last_scored).total_seconds() / 3600
         if age_hours > _RESCORE_HOURS:
             return True
 
@@ -90,8 +100,8 @@ def _is_stale_story(story: dict) -> bool:
         except ValueError:
             return False
     if first_seen.tzinfo is None:
-        first_seen = first_seen.replace(tzinfo=timezone.utc)
-    age_days = (datetime.now(timezone.utc) - first_seen).days
+        first_seen = first_seen.replace(tzinfo=UTC)
+    age_days = (datetime.now(UTC) - first_seen).days
     if age_days > 7 and story.get("status") == "stale":
         return True
     return False
@@ -124,11 +134,41 @@ def _build_prompt(story: dict, articles: list[dict]) -> str:
 
     articles_block = "\n".join(lines) if lines else "(no articles)"
 
+    # Build entity context
+    story_id = story.get("id")
+    entity_context = ""
+    if story_id:
+        entities = get_entities_for_topic(story_id)
+        if entities:
+            ent_lines = []
+            for ent in entities:
+                eid = ent.get("id")
+                name = ent.get("canonical_name", "unknown")
+                etype = ent.get("entity_type", "")
+                importance = ent.get("importance", 0)
+                topic_count = ent.get("topic_count", 0)
+                connected = get_top_connected_entities(eid) if eid else []
+                connected_str = ", ".join(c["name"] for c in connected) if connected else "none"
+                ent_lines.append(
+                    f"- {name} ({etype}, importance: {importance:.0f})\n"
+                    f"  Connected to: {connected_str}\n"
+                    f"  Appears in {topic_count} other topics"
+                )
+            entity_context = (
+                "\n\nEntity connections for this topic:\n"
+                + "\n".join(ent_lines)
+                + "\n\nConsider how this topic's connection to established storylines "
+                "affects its real-world importance. A procedural event that advances "
+                "or threatens a high-importance storyline should score higher than "
+                "its headline suggests.\n"
+            )
+
     return (
         f"Evaluate the significance of this news story.\n\n"
         f"Story title: {topic}\n"
         f"Article headlines and excerpts:\n"
-        f"{articles_block}\n\n"
+        f"{articles_block}\n"
+        f"{entity_context}\n"
         "Score each factor from 0 to its maximum. Base scores ONLY on facts "
         "stated or directly implied in the articles. If a factor cannot be "
         "scored from available information, score it 0 and list it in "
@@ -158,6 +198,10 @@ def _build_prompt(story: dict, articles: list[dict]) -> str:
         "- Do not score based on how 'interesting' or 'clickable' the "
         "story is.\n"
         "- When in doubt, score lower and flag insufficient data.\n\n"
+        "After scoring the topic on its surface-level signals, consider:\n\n"
+        "DOWNSTREAM CONSEQUENCES: What could this story lead to if it develops further?\n"
+        "Rate the potential downstream impact from 1-10, independent of how significant "
+        "the headline appears right now.\n\n"
         "Respond ONLY with valid JSON, no markdown, no preamble:\n"
         "{\n"
         '  "significance_score": <sum of 5 factors, 0-100>,\n'
@@ -169,7 +213,9 @@ def _build_prompt(story: dict, articles: list[dict]) -> str:
         '    "irreversibility": {"score": <int>, "rationale": "<one sentence>"}\n'
         "  },\n"
         '  "insufficient_data": ["<factor names where score is 0 due to missing info>"],\n'
-        '  "confidence": "low" | "medium" | "high"\n'
+        '  "confidence": "low" | "medium" | "high",\n'
+        '  "downstream_potential": <1-10>,\n'
+        '  "downstream_rationale": "<what could this lead to, in one sentence>"\n'
         "}"
     )
 
@@ -352,22 +398,39 @@ def score_impacts(
             insufficient = parsed.get("insufficient_data", [])
             category = parsed.get("category", "")
 
+            # Entity boost: max(entity.importance) * 0.15, capped at 15
+            entity_boost = 0.0
+            entities = get_entities_for_topic(story_id)
+            if entities:
+                max_importance = max(
+                    (e.get("importance", 0) for e in entities), default=0
+                )
+                entity_boost = min(max_importance * ENTITY_BOOST_FACTOR, ENTITY_BOOST_CAP)
+
+            boosted_score = min(100, score + entity_boost)
+
             # Extract population rationale from factors for backward compat
             pop_rationale = ""
             pop_factor = factors.get("population_affected", {})
             if isinstance(pop_factor, dict):
                 pop_rationale = pop_factor.get("rationale", "")
 
+            if entity_boost > 0:
+                logger.debug(
+                    "Story %d: entity boost +%.1f (base %d → %d)",
+                    story_id, entity_boost, score, int(boosted_score),
+                )
+
             # Persist score to DB (impact_score = significance_score for compat)
-            db.update_story_scores(story_id, impact=float(score), attention=story.get("attention_score") or 0.0)
+            db.update_story_scores(story_id, impact=float(boosted_score), attention=story.get("attention_score") or 0.0)
 
             # Persist significance breakdown + metadata
             meta_update: dict = {
-                "significance_score": score,
+                "significance_score": int(boosted_score),
                 "significance_factors": json.dumps(factors),
                 "confidence": confidence,
                 "caveats": insufficient,
-                "impact_scored_at": datetime.now(timezone.utc).isoformat(),
+                "impact_scored_at": datetime.now(UTC).isoformat(),
                 "scored_at_article_count": story.get("article_count") or len(articles),
                 "population_affected": pop_rationale,
             }
@@ -378,10 +441,14 @@ def score_impacts(
             result["scored"] += 1
             result["scores"].append({
                 "story_id": story_id,
-                "score": score,
+                "score": int(boosted_score),
+                "base_score": score,
+                "entity_boost": round(entity_boost, 1),
                 "factors": factors,
                 "confidence": confidence,
                 "insufficient_data": insufficient,
+                "downstream_potential": parsed.get("downstream_potential"),
+                "downstream_rationale": parsed.get("downstream_rationale"),
             })
 
             logger.debug(

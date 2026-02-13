@@ -6,6 +6,8 @@ topic slugs AND assigns one of four fixed categories.
 Cheap enough to run every cycle (~$0.001 per 20 stories).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import time
@@ -13,6 +15,7 @@ import time
 from anthropic import Anthropic
 
 from config.settings import settings
+from constants import MAX_HEADLINES_PER_LABEL
 from db import queries as db
 
 logger = logging.getLogger(__name__)
@@ -201,7 +204,7 @@ def _generate_label(headlines: list[str]) -> tuple[str, str]:
     for attempt in range(2):
         try:
             response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
+                model=settings.haiku_model,
                 max_tokens=100,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -224,7 +227,7 @@ def _generate_label(headlines: list[str]) -> tuple[str, str]:
                     '{"topic": "<better label>", "category": "<category>"}'
                 )
                 retry_response = client.messages.create(
-                    model="claude-haiku-4-5-20251001",
+                    model=settings.haiku_model,
                     max_tokens=100,
                     messages=[{"role": "user", "content": retry_prompt}],
                 )
@@ -294,7 +297,7 @@ def _classify_story_ai(topic: str, headlines: list[str]) -> str:
     try:
         client = Anthropic(api_key=settings.anthropic_api_key)
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=settings.haiku_model,
             max_tokens=30,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -363,7 +366,7 @@ def label_stories(story_ids: list[int] | None = None) -> dict:
                 if title and title not in seen:
                     seen.add(title)
                     headlines.append(title)
-                if len(headlines) >= 15:
+                if len(headlines) >= MAX_HEADLINES_PER_LABEL:
                     break
 
             if not headlines:

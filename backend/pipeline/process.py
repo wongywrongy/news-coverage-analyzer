@@ -15,8 +15,10 @@ Usage:
     python -m pipeline.process
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from rich.console import Console
 from rich.panel import Panel
@@ -71,6 +73,14 @@ def run_clustering() -> dict:
     from analysis.headlines import rename_vague_headlines
     rename_result = rename_vague_headlines()
 
+    # 4.6 Extract entities from topics
+    from pipeline.extract_entities import extract_entities
+    entity_result = extract_entities()
+
+    # 4.7 Update entity graph (edges, strengths, importance)
+    from pipeline.update_graph import update_graph
+    graph_result = update_graph()
+
     # 5. Merge converged stories
     merge_result = merge_similar_stories()
 
@@ -88,6 +98,8 @@ def run_clustering() -> dict:
         "split": split_result,
         "label": label_result,
         "rename": rename_result,
+        "entities": entity_result,
+        "graph": graph_result,
         "merge": merge_result,
         "validate": validate_result,
         "active_stories": len(active_stories),
@@ -95,12 +107,13 @@ def run_clustering() -> dict:
 
     logger.info(
         "Clustering complete: %d assigned, %d new clusters, %d split, %d labeled, "
-        "%d renamed, %d merged, %d validated (%d rejected), %d active.",
+        "%d renamed, %d entities extracted, %d merged, %d validated (%d rejected), %d active.",
         assign_result["assigned"],
         discover_result["clusters_found"],
         split_result["stories_split"],
         label_result["labeled"],
         rename_result["renamed"],
+        entity_result["entities_found"],
         merge_result["merges_performed"],
         validate_result["validated"],
         validate_result["rejected"],
@@ -200,12 +213,16 @@ def run_scoring() -> dict:
     # 7. Ranking (depends on impact, coverage, trend, framings)
     ranking_result = score_rankings()
 
+    # 7b. Heat scoring (front-page prominence — depends on all prior scores)
+    from scoring.heat import score_heat
+    heat_result = score_heat()
+
     # 8. Global insights (cached for frontend insights bar)
     insights_result = generate_insights()
 
     # 9. Deactivate stale low-impact stories (>72h old, score <20)
     deactivated = 0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for story in all_stories:
         if story.get("status") != "stale" or (story.get("impact_score") or 0) >= 20:
             continue
@@ -218,7 +235,7 @@ def run_scoring() -> dict:
             except ValueError:
                 continue
         if last_updated.tzinfo is None:
-            last_updated = last_updated.replace(tzinfo=timezone.utc)
+            last_updated = last_updated.replace(tzinfo=UTC)
         hours_since = (now - last_updated).total_seconds() / 3600
         if hours_since > 72:
             db.deactivate_story(story["id"])
@@ -243,6 +260,7 @@ def run_scoring() -> dict:
         "timeline": timeline_result,
         "gaps": gap_result,
         "ranking": ranking_result,
+        "heat": heat_result,
         "insights": insights_result,
         "deactivated": deactivated,
     }
@@ -395,9 +413,8 @@ def run_analysis() -> dict:
     """
     console.rule("[bold green]Analysis Generation[/bold green]")
 
-    from analysis.staleness import get_stories_needing_analysis
     from analysis.generator import generate_analyses
-
+    from analysis.staleness import get_stories_needing_analysis
     from config.settings import settings as cfg
     batch_size = cfg.analysis_batch_size
     if batch_size <= 0:

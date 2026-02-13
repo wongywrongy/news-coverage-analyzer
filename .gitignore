@@ -1,4 +1,10 @@
+# Environment
 .env
+.env.local
+.env.production
+.env*.local
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -9,10 +15,28 @@ dist/
 build/
 .mypy_cache/
 .pytest_cache/
+.ruff_cache/
+
+# Node / Next.js
 node_modules/
-.claude/
-.backend/.env.example
-.backend/SETUP.md
 .next/
+out/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment
 .vercel
-.env*.local
+
+# Claude Code
+.claude/
+
+# Logs
+*.log
+logs/

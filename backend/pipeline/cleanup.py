@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -150,9 +150,9 @@ def clean_stale() -> None:
                     last_updated = None
             if last_updated:
                 if last_updated.tzinfo is None:
-                    last_updated = last_updated.replace(tzinfo=timezone.utc)
+                    last_updated = last_updated.replace(tzinfo=UTC)
                 hours_since = (
-                    datetime.now(timezone.utc) - last_updated
+                    datetime.now(UTC) - last_updated
                 ).total_seconds() / 3600
                 if hours_since > 120 and impact < 30:
                     should_deactivate = True

@@ -15,6 +15,8 @@ in the same cluster. Results are passed to the analysis generator as context.
 Cost: ~$0.001 per article (Haiku input + output tokens).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import re
@@ -25,7 +27,7 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-_HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_HAIKU_MODEL = settings.haiku_model
 _MAX_TOKENS = 512
 _MAX_BODY_WORDS = 300
 _MAX_ARTICLES = 8  # Match analysis generator's article cap

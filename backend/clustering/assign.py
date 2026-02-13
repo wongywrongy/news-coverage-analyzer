@@ -5,6 +5,8 @@ belong to stories we already know about. Articles that don't match
 any existing story are left unassigned for the discovery step.
 """
 
+from __future__ import annotations
+
 import logging
 import math
 

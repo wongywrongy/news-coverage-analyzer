@@ -8,6 +8,7 @@ function getDisplayLabel(category) {
 }
 
 function getTag(story) {
+  if (story.featured_reason === 'undercovered') return 'undercovered';
   const biasSpread = story.bias_spread || 0;
   if (biasSpread >= 1.5) return 'divergent';
   const trend = parseTrend(story);
@@ -20,24 +21,38 @@ function MetaSep() {
   return <span className="meta-sep" />;
 }
 
-export default function TopStories({ stories }) {
+export default function TopStories({ stories, stats, storyCount }) {
   if (!stories || stories.length < 2) return null;
 
   const lead = stories[0];
   const sides = stories.slice(1, 3);
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const topicCount = storyCount || 0;
+  const articleCount = stats?.articleCount || 0;
+  const metaParts = [dateStr, `${topicCount} topics`, `${articleCount.toLocaleString()} articles`];
 
   return (
     <section className="ts" style={{
       background: 'var(--bg)',
       padding: '0 48px var(--space-md)',
     }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
         {/* Header */}
         <div className="ts-header" style={{
           paddingTop: 12,
           marginBottom: 'var(--space-md)',
           paddingBottom: 'var(--space-sm)',
           borderBottom: '2px solid var(--ink)',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 12,
         }}>
           <span className="ts-label" style={{
             fontSize: 11,
@@ -48,6 +63,15 @@ export default function TopStories({ stories }) {
           }}>
             Top Stories
           </span>
+          {(topicCount > 0 || articleCount > 0) && (
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11,
+              color: 'var(--ink-muted)',
+            }}>
+              {metaParts.join(' \u00B7 ')}
+            </span>
+          )}
         </div>
 
         {/* Grid */}
@@ -79,7 +103,7 @@ function LeadStory({ story }) {
   const tag = getTag(story);
 
   return (
-    <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+    <Link href={`/topic/${story.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div className="ts-lead" style={{
         paddingRight: 'var(--space-md)',
         cursor: 'pointer',
@@ -95,6 +119,9 @@ function LeadStory({ story }) {
           )}
           {tag === 'divergent' && (
             <span className="tag-pill divergent">High divergence</span>
+          )}
+          {tag === 'undercovered' && (
+            <span className="tag-pill undercovered">Undercovered</span>
           )}
         </div>
 
@@ -137,7 +164,7 @@ function SideStory({ story, isLast }) {
   const tag = getTag(story);
 
   return (
-    <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex' }}>
+    <Link href={`/topic/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex' }}>
       <div className="ts-side-item" style={{
         padding: 'var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md)',
         cursor: 'pointer',
@@ -154,6 +181,9 @@ function SideStory({ story, isLast }) {
           )}
           {tag === 'divergent' && (
             <span className="side-tag-pill divergent">High divergence</span>
+          )}
+          {tag === 'undercovered' && (
+            <span className="side-tag-pill undercovered">Undercovered</span>
           )}
         </div>
 

@@ -9,24 +9,31 @@ Usage:
     python -m pipeline.select
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from config.settings import settings
 from db.queries import (
     clear_selection_flags,
+    get_entities_for_topic,
     get_selection_candidates,
+    get_top_connected_entities,
     mark_stories_selected,
 )
 
 logger = logging.getLogger(__name__)
 
 SELECTION_PROMPT = """\
-You are an editorial director for a nonpartisan news analysis platform.
+You are an editorial director for a nonpartisan, US-focused news analysis platform.
 
 Your job: decide which stories deserve expensive AI analysis this cycle.
 You have a budget of {max_stories} analysis slots.
+
+AUDIENCE: Your readers are primarily US-based. Prioritize stories that matter
+most to an informed American audience.
 
 For each story, choose ONE action:
 - "analyze_new": Story has no analysis yet and is worth analyzing
@@ -40,11 +47,23 @@ PRIORITIZE stories where:
 4. Multiple ideologically diverse sources are covering it (more contrast potential)
 5. Undercovered high-impact stories are still valuable but should not dominate — feature 1-2 per cycle max
 6. Missing analysis entirely (analyze_new over re_analyze when close)
+7. US domestic stories should generally rank above international stories at similar impact levels
+8. International stories ARE worth analyzing when they directly affect US interests, policy, economy,
+   or security — but purely foreign stories with no US nexus should be deprioritized
 
 SKIP stories that are:
 - Low significance (< 30 score)
 - Stale with no new articles
 - Already have fresh analysis with few new articles since
+- Purely international with no meaningful US connection (unless impact > 80)
+
+Each story may include entity_connections showing which people, organizations,
+and cases it connects to, along with their importance scores. Use this to:
+- Prioritize stories that sit at intersections of multiple important storylines
+- Recognize that "routine" events involving high-importance entities often
+  deserve analysis because they advance ongoing narratives
+- Avoid dismissing procedural/legal stories when the entities involved have
+  high importance scores — these are often where major stories develop
 
 Here are the candidate stories:
 
@@ -68,7 +87,7 @@ Include ALL stories in your response. Return valid JSON only.
 
 def _build_candidate_list(candidates: list[dict]) -> list[dict]:
     """Build a compact candidate list for the prompt."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     items = []
     for c in candidates:
         # Hours since last article
@@ -78,7 +97,7 @@ def _build_candidate_list(candidates: list[dict]) -> list[dict]:
             try:
                 dt = datetime.fromisoformat(str(last_article_at).replace("Z", "+00:00"))
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 hours_since_last_article = round((now - dt).total_seconds() / 3600, 1)
             except (ValueError, TypeError):
                 pass
@@ -93,7 +112,7 @@ def _build_candidate_list(candidates: list[dict]) -> list[dict]:
                     str(c["analysis_generated_at"]).replace("Z", "+00:00")
                 )
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 hours_since_analysis = round((now - dt).total_seconds() / 3600, 1)
             except (ValueError, TypeError):
                 pass
@@ -108,7 +127,25 @@ def _build_candidate_list(candidates: list[dict]) -> list[dict]:
         coverage = c.get("coverage_score") or 0
         coverage_gap = round(impact - coverage, 1)
 
-        items.append({
+        # Entity connections
+        entity_connections = []
+        cluster_importance = 0
+        try:
+            entities = get_entities_for_topic(c["id"])
+            for ent in entities:
+                eid = ent.get("id")
+                imp = ent.get("importance", 0)
+                connected = get_top_connected_entities(eid) if eid else []
+                entity_connections.append({
+                    "name": ent.get("canonical_name", ""),
+                    "importance": round(imp, 1),
+                    "linked_to": [conn["name"] for conn in connected],
+                })
+                cluster_importance = max(cluster_importance, imp)
+        except Exception as exc:
+            logger.debug("Entity graph lookup failed for story %d: %s", c["id"], exc)
+
+        item = {
             "story_id": c["id"],
             "topic": c.get("topic", ""),
             "category": c.get("category", ""),
@@ -123,7 +160,11 @@ def _build_candidate_list(candidates: list[dict]) -> list[dict]:
             "has_analysis": has_analysis,
             "hours_since_analysis": hours_since_analysis,
             "articles_since_analysis": articles_since_analysis,
-        })
+        }
+        if entity_connections:
+            item["entity_connections"] = entity_connections
+            item["cluster_importance"] = round(cluster_importance, 1)
+        items.append(item)
     return items
 
 

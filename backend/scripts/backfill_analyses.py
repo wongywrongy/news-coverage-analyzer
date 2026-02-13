@@ -10,6 +10,8 @@ Usage:
     python -m scripts.backfill_analyses --force --limit 23  # regenerate existing
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import sys
@@ -18,8 +20,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
-from db.client import get_client
 from analysis.generator import generate_analyses
+from db.client import get_client
 
 
 def backfill(limit: int | None = None, min_impact: int = 0, force: bool = False) -> None:
@@ -66,7 +68,7 @@ def backfill(limit: int | None = None, min_impact: int = 0, force: bool = False)
             if result["generated"] > 0:
                 generated += 1
             else:
-                print(f"    Skipped (no articles or already fresh)")
+                print("    Skipped (no articles or already fresh)")
         except Exception as e:
             print(f"    ERROR: {e}")
             errors += 1

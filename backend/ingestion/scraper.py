@@ -6,6 +6,8 @@ which handles boilerplate removal, paywall fragments, and encoding.
 Used by the pipeline to enrich articles that only have headlines/descriptions.
 """
 
+from __future__ import annotations
+
 import logging
 import time
 
@@ -50,8 +52,8 @@ def scrape_article_body(url: str) -> str:
         return text[:MAX_BODY_CHARS]
     except KeyboardInterrupt:
         raise
-    except Exception:
-        logger.debug("Scrape failed for %s", url, exc_info=True)
+    except Exception as exc:
+        logger.debug("Scrape failed for %s: %s", url, exc, exc_info=True)
         return ""
 
 
@@ -113,8 +115,8 @@ def scrape_missing_bodies(
                     "id", article["id"]
                 ).execute()
                 stats["scraped"] += 1
-            except Exception:
-                logger.warning("Failed to update body for article %d", article["id"])
+            except Exception as exc:
+                logger.warning("Failed to update body for article %d: %s", article["id"], exc)
                 stats["failed"] += 1
         else:
             stats["failed"] += 1

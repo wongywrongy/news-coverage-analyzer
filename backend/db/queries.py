@@ -8,9 +8,11 @@ typed arguments / return values.
 Groups: ARTICLES, STORIES, ANALYSES, VECTORS
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.client import get_client
 
@@ -277,7 +279,7 @@ def update_story_scores(story_id: int, impact: float, attention: float) -> None:
         client.table("stories").update({
             "impact_score": impact,
             "attention_score": attention,
-            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(UTC).isoformat(),
         }).eq("id", story_id).execute()
     except Exception as exc:
         logger.error("update_story_scores(%d) failed: %s", story_id, exc)
@@ -290,7 +292,7 @@ def update_story_metadata(story_id: int, **kwargs: object) -> None:
     """
     if not kwargs:
         return
-    kwargs["last_updated"] = datetime.now(timezone.utc).isoformat()
+    kwargs["last_updated"] = datetime.now(UTC).isoformat()
     client = get_client()
     try:
         client.table("stories").update(kwargs).eq("id", story_id).execute()
@@ -326,8 +328,9 @@ def _adjust_daily_count(story_id: int, date_str: str, delta: int) -> None:
             "p_date": date_str,
             "p_delta": delta,
         }).execute()
-    except Exception:
+    except Exception as exc:
         # Fallback: read-then-write (safe for single-threaded pipeline)
+        logger.debug("RPC upsert_daily_count unavailable, falling back: %s", exc)
         try:
             result = (
                 client.table("story_daily_counts")
@@ -432,7 +435,7 @@ def recalculate_daily_counts(story_id: int) -> int:
 
 def upsert_analysis(data: dict) -> None:
     """Insert or update an analysis keyed by story_id."""
-    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    data["updated_at"] = datetime.now(UTC).isoformat()
     client = get_client()
     try:
         client.table("analyses").upsert(data, on_conflict="story_id").execute()
@@ -476,8 +479,8 @@ def get_stale_analyses(threshold_hours: float) -> list[int]:
     """
     client = get_client()
     try:
-        cutoff = datetime.now(timezone.utc).timestamp() - (threshold_hours * 3600)
-        cutoff_iso = datetime.fromtimestamp(cutoff, tz=timezone.utc).isoformat()
+        cutoff = datetime.now(UTC).timestamp() - (threshold_hours * 3600)
+        cutoff_iso = datetime.fromtimestamp(cutoff, tz=UTC).isoformat()
         result = (
             client.table("analyses")
             .select("story_id")
@@ -609,7 +612,7 @@ def mark_stories_selected(selections: list[dict]) -> None:
     Each dict must have: story_id, reason, priority
     """
     client = get_client()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     for sel in selections:
         try:
             client.table("stories").update({
@@ -688,11 +691,350 @@ def set_cached_insights(insights: list[dict]) -> None:
         client.table("insights_cache").upsert({
             "id": 1,
             "insights": insights,
-            "computed_at": datetime.now(timezone.utc).isoformat(),
+            "computed_at": datetime.now(UTC).isoformat(),
         }).execute()
         logger.info("Cached %d insights", len(insights))
     except Exception as exc:
         logger.error("set_cached_insights failed: %s", exc)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  ENTITY GRAPH
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def upsert_entity(
+    canonical_name: str,
+    entity_type: str,
+    aliases: list[str] | None = None,
+) -> int | None:
+    """Insert or update an entity by canonical_name. Returns entity id.
+
+    If the entity exists, merges new aliases into the existing alias list
+    and bumps last_seen_at. If not, creates a new entity.
+    """
+    client = get_client()
+    try:
+        # Check for exact canonical match
+        result = (
+            client.table("entities")
+            .select("id, aliases")
+            .eq("canonical_name", canonical_name)
+            .execute()
+        )
+        if result.data:
+            row = result.data[0]
+            entity_id = row["id"]
+            existing_aliases = row.get("aliases") or []
+            if isinstance(existing_aliases, str):
+                try:
+                    existing_aliases = json.loads(existing_aliases)
+                except (json.JSONDecodeError, ValueError):
+                    existing_aliases = []
+            # Merge new aliases
+            merged = list(set(existing_aliases + (aliases or [])))
+            client.table("entities").update({
+                "aliases": merged,
+                "last_seen_at": datetime.now(UTC).isoformat(),
+            }).eq("id", entity_id).execute()
+            return entity_id
+
+        # No exact match — create new entity
+        insert_data = {
+            "canonical_name": canonical_name,
+            "entity_type": entity_type,
+            "aliases": aliases or [],
+            "first_seen_at": datetime.now(UTC).isoformat(),
+            "last_seen_at": datetime.now(UTC).isoformat(),
+        }
+        result = client.table("entities").insert(insert_data).execute()
+        if result.data:
+            return result.data[0]["id"]
+        return None
+    except Exception as exc:
+        logger.error("upsert_entity(%s) failed: %s", canonical_name, exc)
+        return None
+
+
+def find_entity_by_alias(alias: str, entity_type: str) -> int | None:
+    """Search for an entity whose aliases array contains the given alias.
+
+    Returns entity id if found, None otherwise.
+    """
+    client = get_client()
+    try:
+        result = (
+            client.table("entities")
+            .select("id")
+            .eq("entity_type", entity_type)
+            .contains("aliases", [alias])
+            .execute()
+        )
+        if result.data:
+            return result.data[0]["id"]
+        return None
+    except Exception as exc:
+        logger.error("find_entity_by_alias(%s) failed: %s", alias, exc)
+        return None
+
+
+def link_topic_entity(
+    topic_id: int, entity_id: int, relevance: str = "secondary"
+) -> None:
+    """Create a topic ↔ entity link. Skips if already exists."""
+    client = get_client()
+    try:
+        client.table("topic_entities").upsert(
+            {
+                "topic_id": topic_id,
+                "entity_id": entity_id,
+                "relevance": relevance,
+                "extracted_at": datetime.now(UTC).isoformat(),
+            },
+            on_conflict="topic_id,entity_id",
+            ignore_duplicates=True,
+        ).execute()
+    except Exception as exc:
+        logger.error("link_topic_entity(%d, %d) failed: %s", topic_id, entity_id, exc)
+
+
+def get_entities_for_topic(topic_id: int) -> list[dict]:
+    """Return entities linked to a topic with their full entity data."""
+    client = get_client()
+    try:
+        result = (
+            client.table("topic_entities")
+            .select("relevance, entities(id, canonical_name, entity_type, importance, topic_count, aliases)")
+            .eq("topic_id", topic_id)
+            .execute()
+        )
+        rows = result.data or []
+        entities = []
+        for row in rows:
+            entity_data = row.get("entities")
+            if isinstance(entity_data, dict):
+                entity_data["relevance"] = row.get("relevance", "secondary")
+                entities.append(entity_data)
+            elif isinstance(entity_data, list) and entity_data:
+                entity_data[0]["relevance"] = row.get("relevance", "secondary")
+                entities.append(entity_data[0])
+        return entities
+    except Exception as exc:
+        logger.error("get_entities_for_topic(%d) failed: %s", topic_id, exc)
+        return []
+
+
+def get_topics_for_entity(entity_id: int) -> list[int]:
+    """Return list of topic (story) IDs linked to an entity."""
+    client = get_client()
+    try:
+        result = (
+            client.table("topic_entities")
+            .select("topic_id")
+            .eq("entity_id", entity_id)
+            .execute()
+        )
+        return [row["topic_id"] for row in (result.data or [])]
+    except Exception as exc:
+        logger.error("get_topics_for_entity(%d) failed: %s", entity_id, exc)
+        return []
+
+
+def upsert_entity_relationship(entity_a_id: int, entity_b_id: int) -> None:
+    """Create or increment a relationship edge between two entities.
+
+    Ensures entity_a_id < entity_b_id to maintain the CHECK constraint.
+    """
+    a, b = min(entity_a_id, entity_b_id), max(entity_a_id, entity_b_id)
+    if a == b:
+        return
+    client = get_client()
+    now = datetime.now(UTC).isoformat()
+    try:
+        # Check if relationship exists
+        result = (
+            client.table("entity_relationships")
+            .select("id, co_occurrence")
+            .eq("entity_a_id", a)
+            .eq("entity_b_id", b)
+            .execute()
+        )
+        if result.data:
+            row = result.data[0]
+            client.table("entity_relationships").update({
+                "co_occurrence": row["co_occurrence"] + 1,
+                "last_linked_at": now,
+            }).eq("id", row["id"]).execute()
+        else:
+            client.table("entity_relationships").insert({
+                "entity_a_id": a,
+                "entity_b_id": b,
+                "co_occurrence": 1,
+                "strength": 0.0,
+                "first_linked_at": now,
+                "last_linked_at": now,
+            }).execute()
+    except Exception as exc:
+        logger.error("upsert_entity_relationship(%d, %d) failed: %s", a, b, exc)
+
+
+def get_entity_relationships(entity_id: int) -> list[dict]:
+    """Return all relationship edges involving an entity."""
+    client = get_client()
+    try:
+        # Entity can be on either side of the edge
+        result_a = (
+            client.table("entity_relationships")
+            .select("entity_b_id, co_occurrence, strength, last_linked_at")
+            .eq("entity_a_id", entity_id)
+            .execute()
+        )
+        result_b = (
+            client.table("entity_relationships")
+            .select("entity_a_id, co_occurrence, strength, last_linked_at")
+            .eq("entity_b_id", entity_id)
+            .execute()
+        )
+        edges = []
+        for row in (result_a.data or []):
+            edges.append({
+                "neighbor_id": row["entity_b_id"],
+                "co_occurrence": row["co_occurrence"],
+                "strength": row["strength"],
+                "last_linked_at": row["last_linked_at"],
+            })
+        for row in (result_b.data or []):
+            edges.append({
+                "neighbor_id": row["entity_a_id"],
+                "co_occurrence": row["co_occurrence"],
+                "strength": row["strength"],
+                "last_linked_at": row["last_linked_at"],
+            })
+        return edges
+    except Exception as exc:
+        logger.error("get_entity_relationships(%d) failed: %s", entity_id, exc)
+        return []
+
+
+def get_all_entities() -> list[dict]:
+    """Return all entities, ordered by importance descending."""
+    client = get_client()
+    try:
+        result = (
+            client.table("entities")
+            .select("*")
+            .order("importance", desc=True)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        logger.error("get_all_entities failed: %s", exc)
+        return []
+
+
+def get_all_entity_relationships() -> list[dict]:
+    """Return all relationship edges."""
+    client = get_client()
+    try:
+        result = (
+            client.table("entity_relationships")
+            .select("*")
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        logger.error("get_all_entity_relationships failed: %s", exc)
+        return []
+
+
+def update_entity_importance(entity_id: int, importance: float, topic_count: int) -> None:
+    """Update an entity's computed importance score and topic count."""
+    client = get_client()
+    try:
+        client.table("entities").update({
+            "importance": importance,
+            "topic_count": topic_count,
+        }).eq("id", entity_id).execute()
+    except Exception as exc:
+        logger.error("update_entity_importance(%d) failed: %s", entity_id, exc)
+
+
+def update_relationship_strength(rel_id: int, strength: float) -> None:
+    """Update the computed strength of a relationship edge."""
+    client = get_client()
+    try:
+        client.table("entity_relationships").update({
+            "strength": strength,
+        }).eq("id", rel_id).execute()
+    except Exception as exc:
+        logger.error("update_relationship_strength(%d) failed: %s", rel_id, exc)
+
+
+def get_topics_with_entities(entity_ids: list[int]) -> list[dict]:
+    """Return topic_entities rows for a set of entity IDs (for co-occurrence lookups)."""
+    if not entity_ids:
+        return []
+    client = get_client()
+    try:
+        result = (
+            client.table("topic_entities")
+            .select("topic_id, entity_id")
+            .in_("entity_id", entity_ids)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        logger.error("get_topics_with_entities failed: %s", exc)
+        return []
+
+
+def get_extracted_topic_ids() -> set[int]:
+    """Return set of topic IDs that already have entity extractions."""
+    client = get_client()
+    try:
+        result = (
+            client.table("topic_entities")
+            .select("topic_id")
+            .execute()
+        )
+        return {row["topic_id"] for row in (result.data or [])}
+    except Exception as exc:
+        logger.error("get_extracted_topic_ids failed: %s", exc)
+        return set()
+
+
+def get_top_connected_entities(entity_id: int, limit: int = 3) -> list[dict]:
+    """Return the top N entities connected to a given entity by strength."""
+    edges = get_entity_relationships(entity_id)
+    edges.sort(key=lambda e: e.get("strength", 0), reverse=True)
+    top_edges = edges[:limit]
+    if not top_edges:
+        return []
+    client = get_client()
+    neighbor_ids = [e["neighbor_id"] for e in top_edges]
+    try:
+        result = (
+            client.table("entities")
+            .select("id, canonical_name, entity_type, importance")
+            .in_("id", neighbor_ids)
+            .execute()
+        )
+        name_map = {r["id"]: r for r in (result.data or [])}
+        connected = []
+        for edge in top_edges:
+            nid = edge["neighbor_id"]
+            info = name_map.get(nid, {})
+            connected.append({
+                "id": nid,
+                "name": info.get("canonical_name", f"entity-{nid}"),
+                "type": info.get("entity_type", ""),
+                "importance": info.get("importance", 0),
+                "strength": edge.get("strength", 0),
+            })
+        return connected
+    except Exception as exc:
+        logger.error("get_top_connected_entities(%d) failed: %s", entity_id, exc)
+        return []
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

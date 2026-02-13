@@ -8,6 +8,8 @@ Usage:
     python -m db.migrations
 """
 
+from __future__ import annotations
+
 import logging
 
 from db.client import get_client
@@ -244,6 +246,70 @@ INSERT INTO insights_cache (id, insights) VALUES (1, '[]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 """
 
+# ── Entity graph tables ──────────────────────────────────────────────────────
+
+CREATE_ENTITIES = """
+CREATE TABLE IF NOT EXISTS entities (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    canonical_name  TEXT NOT NULL UNIQUE,
+    entity_type     VARCHAR(20) NOT NULL,
+    aliases         JSONB DEFAULT '[]'::jsonb,
+    first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    topic_count     INT DEFAULT 0,
+    importance      FLOAT DEFAULT 0.0,
+    metadata        JSONB DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
+CREATE INDEX IF NOT EXISTS idx_entities_importance ON entities(importance DESC);
+CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(canonical_name);
+"""
+
+CREATE_TOPIC_ENTITIES = """
+CREATE TABLE IF NOT EXISTS topic_entities (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    topic_id    BIGINT REFERENCES stories(id) ON DELETE CASCADE,
+    entity_id   BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    relevance   VARCHAR(10) NOT NULL DEFAULT 'secondary',
+    extracted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(topic_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_topic_entities_topic ON topic_entities(topic_id);
+CREATE INDEX IF NOT EXISTS idx_topic_entities_entity ON topic_entities(entity_id);
+"""
+
+CREATE_ENTITY_RELATIONSHIPS = """
+CREATE TABLE IF NOT EXISTS entity_relationships (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    entity_a_id     BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    entity_b_id     BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    co_occurrence   INT DEFAULT 1,
+    strength        FLOAT DEFAULT 0.0,
+    first_linked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_linked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(entity_a_id, entity_b_id),
+    CHECK(entity_a_id < entity_b_id)
+);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_a ON entity_relationships(entity_a_id);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_b ON entity_relationships(entity_b_id);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_strength ON entity_relationships(strength DESC);
+"""
+
+ADD_HEAT_COLUMNS = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS heat FLOAT DEFAULT 0.0;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS heat_updated_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_stories_heat ON stories (heat DESC) WHERE active = TRUE;
+"""
+
+ADD_US_FOCUS_COLUMNS = """
+-- Source region tracking on articles
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS source_region TEXT DEFAULT 'us';
+
+-- US connection metadata on stories
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS us_connection_type TEXT DEFAULT '';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS us_connection_note TEXT DEFAULT '';
+"""
+
 CREATE_UPSERT_DAILY_COUNT_RPC = """
 CREATE OR REPLACE FUNCTION upsert_daily_count(
     p_story_id bigint,
@@ -284,6 +350,11 @@ MIGRATION_STEPS: list[tuple[str, str]] = [
     ("Add rank_score to stories",        ADD_RANK_SCORE),
     ("Create insights cache table",      CREATE_INSIGHTS_CACHE),
     ("Add selection columns to stories", ADD_SELECTION_COLUMNS),
+    ("Create entities table",            CREATE_ENTITIES),
+    ("Create topic_entities table",      CREATE_TOPIC_ENTITIES),
+    ("Create entity_relationships table", CREATE_ENTITY_RELATIONSHIPS),
+    ("Add heat columns to stories",      ADD_HEAT_COLUMNS),
+    ("Add US focus columns",              ADD_US_FOCUS_COLUMNS),
 ]
 
 

@@ -10,13 +10,15 @@ Usage:
     cd backend && .venv/Scripts/python.exe -m scripts.backfill_categories --ai-only
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 
 from clustering.label import (
+    _validate_category,
     categorize_stories_by_keywords,
     label_stories,
-    _validate_category,
 )
 from db.queries import get_active_stories
 

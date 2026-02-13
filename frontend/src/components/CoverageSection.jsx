@@ -26,7 +26,7 @@ export default function CoverageSection({ categorySummary }) {
       borderBottom: 'none',
     }}>
       <div className="coverage-grid" style={{
-        maxWidth: 1280,
+        maxWidth: 1080,
         margin: '0 auto',
         display: 'grid',
         gridTemplateColumns: '1fr 1.4fr',
@@ -70,7 +70,7 @@ export default function CoverageSection({ categorySummary }) {
           </p>
 
           <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-            <Link href="/how-it-works" style={{
+            <Link href="/methodology" style={{
               padding: '14px 24px',
               fontFamily: "'DM Sans', sans-serif",
               textDecoration: 'none',

@@ -10,6 +10,8 @@ Usage:
     python -m pipeline.poc_analysis
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -218,15 +220,15 @@ def print_analysis(story: dict, category: str, analysis: dict) -> None:
     console.print(f"[bold]HEADLINE:[/bold] {analysis.get('headline', '(none)')}")
     console.print(f"[bold]DATELINE:[/bold] {analysis.get('dateline', '(none)')}")
 
-    console.print(f"\n[bold]LEDE:[/bold]")
+    console.print("\n[bold]LEDE:[/bold]")
     console.print(f"  {analysis.get('lede', '(none)')}")
 
-    console.print(f"\n[bold]CONTEXT:[/bold]")
+    console.print("\n[bold]CONTEXT:[/bold]")
     console.print(f"  {analysis.get('context', '(none)')}")
 
     framings = analysis.get("source_framings") or []
     if framings:
-        console.print(f"\n[bold]SOURCE FRAMINGS:[/bold]")
+        console.print("\n[bold]SOURCE FRAMINGS:[/bold]")
         for sf in framings:
             source = sf.get("source", "?")
             primary = sf.get("primary_framing", "?")
@@ -242,7 +244,7 @@ def print_analysis(story: dict, category: str, analysis: dict) -> None:
 
     contrasts = analysis.get("contrasts") or []
     if contrasts:
-        console.print(f"[bold]CONTRASTS:[/bold]")
+        console.print("[bold]CONTRASTS:[/bold]")
         for c in contrasts:
             console.print(f"  [bold]THEME:[/bold] {c.get('theme', '?')}")
             framing_a = c.get("framingA") or c.get("biasA", "?")
@@ -260,7 +262,7 @@ def print_analysis(story: dict, category: str, analysis: dict) -> None:
 
     facts = analysis.get("facts") or []
     if facts:
-        console.print(f"[bold]FACT CHECKS:[/bold]")
+        console.print("[bold]FACT CHECKS:[/bold]")
         for f in facts:
             console.print(f"  [bold]CLAIM:[/bold] {f.get('claim', '?')}")
             console.print(f"  [bold]REALITY:[/bold] {f.get('reality', '?')}")
@@ -274,10 +276,10 @@ def print_analysis(story: dict, category: str, analysis: dict) -> None:
             console.print(f"  [bold]VERDICT:[/bold] [{v_style}]{verdict}[/{v_style}]")
             console.print()
 
-    console.print(f"[bold]BOTTOM LINE:[/bold]")
+    console.print("[bold]BOTTOM LINE:[/bold]")
     console.print(f"  {analysis.get('bottom_line', '(none)')}")
 
-    console.print(f"\n[bold]COVERAGE NOTE:[/bold]")
+    console.print("\n[bold]COVERAGE NOTE:[/bold]")
     console.print(f"  {analysis.get('coverage_note', '(none)')}")
 
 

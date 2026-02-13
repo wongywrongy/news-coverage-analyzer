@@ -16,6 +16,7 @@ import time
 from typing import TYPE_CHECKING
 
 from config.settings import settings
+from constants import EMBEDDING_BATCH_SIZE, EMBEDDING_DIMENSIONS
 from models.schemas import Article
 
 if TYPE_CHECKING:
@@ -23,9 +24,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_OPENAI_MODEL = "text-embedding-3-small"
-_OPENAI_DIMENSIONS = 384
-_OPENAI_BATCH_SIZE = 100
+_OPENAI_MODEL = settings.embedding_model
+_OPENAI_DIMENSIONS = EMBEDDING_DIMENSIONS
+_OPENAI_BATCH_SIZE = EMBEDDING_BATCH_SIZE
 _OPENAI_MAX_RETRIES = 3
 _OPENAI_BASE_DELAY = 1.0  # seconds
 

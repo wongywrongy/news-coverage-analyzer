@@ -8,11 +8,10 @@ Usage:
     python -m tests.test_clustering
 """
 
+from __future__ import annotations
+
 import json
-import math
 import os
-import sys
-import traceback
 
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
@@ -635,6 +634,7 @@ def section_8_data_quality() -> None:
     console.rule("[bold]Section 8: Data Quality Post-Clustering[/bold]")
 
     import numpy as np
+
     from db.client import get_client
 
     client = get_client()
@@ -901,6 +901,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     import logging
+
     from rich.logging import RichHandler
 
     logging.basicConfig(

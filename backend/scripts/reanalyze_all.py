@@ -11,6 +11,8 @@ Usage:
     python -m scripts.reanalyze_all --execute --delay 1.5 # custom delay between calls
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import os
@@ -21,9 +23,9 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
-from db.client import get_client
 from analysis.generator import generate_analyses
 from config.settings import settings
+from db.client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +139,7 @@ def main() -> None:
                 f"{story.get('topic', '?')[:55]} "
                 f"({story.get('article_count', 0)} articles, v{version})"
             )
-        print(f"\nRe-run with --execute to actually process these stories.")
+        print("\nRe-run with --execute to actually process these stories.")
         return
 
     # Confirm

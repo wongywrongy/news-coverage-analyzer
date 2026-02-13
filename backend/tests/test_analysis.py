@@ -7,6 +7,8 @@ Usage:
     python -m tests.test_analysis
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -75,8 +77,8 @@ def test_imports() -> None:
     # 1.3 — internal helpers
     try:
         from analysis.generator import (  # noqa: F401
-            _needs_analysis,
             _build_sonnet_prompt,
+            _needs_analysis,
             _parse_response,
         )
         PASS("Import internal helpers (_needs_analysis, _build_sonnet_prompt, _parse_response)")
@@ -306,7 +308,7 @@ def test_prompt(stories: list[dict]) -> list[tuple[int, str, str]]:
     um_lower = user_msg.lower()
     topic = top_story.get("topic", "")
     if topic and topic.lower() in um_lower:
-        PASS(f"User message contains story topic")
+        PASS("User message contains story topic")
     else:
         WARN(f"Story topic '{topic[:30]}' not found verbatim in user message")
 

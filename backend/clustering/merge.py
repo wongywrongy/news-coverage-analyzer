@@ -5,6 +5,8 @@ as more articles arrive.  This module detects those near-duplicates
 and folds the smaller cluster into the larger one.
 """
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np

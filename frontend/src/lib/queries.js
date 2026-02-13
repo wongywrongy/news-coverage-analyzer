@@ -51,17 +51,15 @@ export async function getStories() {
       return ts && new Date(ts).getTime() >= sinceMs;
     });
 
-    // Sort by rank_score (from backend ranking), fallback to weighted formula
+    // Sort by heat (front-page prominence), fallback to rank_score then impact
     recent.sort((a, b) => {
+      const heatA = a.heat || 0;
+      const heatB = b.heat || 0;
+      if (heatA !== heatB) return heatB - heatA;
       const rankA = a.rank_score || 0;
       const rankB = b.rank_score || 0;
       if (rankA !== rankB) return rankB - rankA;
-      // Fallback: 60% impact + 40% coverage
-      const covA = a.coverage_score || a.attention_score || 0;
-      const covB = b.coverage_score || b.attention_score || 0;
-      const scoreA = (a.impact_score || 0) * 0.6 + covA * 0.4;
-      const scoreB = (b.impact_score || 0) * 0.6 + covB * 0.4;
-      return scoreB - scoreA;
+      return (b.impact_score || 0) - (a.impact_score || 0);
     });
 
     // Cap at 50
@@ -355,11 +353,11 @@ export async function getHeadlineStories() {
 async function _fetchHeadlineCandidates(minImpact, minArticles, sinceMs) {
   const { data: stories, error: sErr } = await supabase
     .from('stories')
-    .select('id, topic, category, impact_score, article_count, source_count, trend, bias_spread, rank_score, first_seen, created_at')
+    .select('id, topic, category, impact_score, article_count, source_count, trend, bias_spread, rank_score, heat, featured_reason, first_seen, created_at')
     .eq('active', true)
     .gte('impact_score', minImpact)
     .gte('article_count', minArticles)
-    .order('rank_score', { ascending: false })
+    .order('heat', { ascending: false })
     .limit(20);
 
   if (sErr || !stories || stories.length === 0) return [];
@@ -397,6 +395,8 @@ async function _fetchHeadlineCandidates(minImpact, minArticles, sinceMs) {
       source_count: s.source_count,
       trend: s.trend,
       bias_spread: s.bias_spread,
+      heat: s.heat,
+      featured_reason: s.featured_reason,
       headline: analysisMap[s.id].headline,
       lede: analysisMap[s.id].lede,
     }));
@@ -411,7 +411,7 @@ export async function getArchiveStories() {
 
     const { data, error } = await supabase
       .from('stories')
-      .select('id, topic, category, impact_score, coverage_score, attention_score, article_count, source_count, first_seen, last_updated, last_article_at, rank_score, trend, status, bias_spread')
+      .select('id, topic, category, impact_score, coverage_score, attention_score, article_count, source_count, first_seen, last_updated, last_article_at, rank_score, heat, featured_reason, trend, status, bias_spread')
       .in('id', analyzedIds)
       .order('first_seen', { ascending: false });
 
@@ -487,11 +487,11 @@ export async function getHomepageData() {
       }
     }
 
-    // Sort each group by rank_score, take top N
+    // Sort each group by heat (front-page prominence), take top N
     const categories = Object.entries(groupMap)
       .filter(([, stories]) => stories.length > 0)
       .map(([name, stories]) => {
-        stories.sort((a, b) => (b.rank_score || 0) - (a.rank_score || 0));
+        stories.sort((a, b) => (b.heat || 0) - (a.heat || 0));
 
         return {
           name,
@@ -502,6 +502,7 @@ export async function getHomepageData() {
             article_count: s.article_count || 0,
             impact_score: s.impact_score || 0,
             coverage_score: s.coverage_score || s.attention_score || 0,
+            heat: s.heat || 0,
             rank_score: s.rank_score || 0,
             featured_reason: s.featured_reason || 'notable',
             trend: s.trend,

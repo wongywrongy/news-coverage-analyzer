@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import Link from 'next/link';
 import ContrastCard from './ContrastCard';
 import { getPrimaryCategory, getGroupLabel, getGroupColor, parseTrend } from '../lib/constants';
 
@@ -248,44 +247,7 @@ export default function StoryDetail({ story, analysis, sourceList = [], biasCoun
     : '';
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
-      {/* ── Sticky Nav ── */}
-      <div className="sd-nav" style={{
-        background: 'rgba(250,250,247,0.9)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        padding: '14px 48px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-      }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <div className="sd-logo" style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 21,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}>
-            <span style={{ color: 'var(--ink)' }}>Clear</span>
-            <span style={{ color: 'var(--accent-gold)' }}>Signal</span>
-          </div>
-        </Link>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span className="sd-back" style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 12,
-            color: 'var(--ink-muted)',
-            cursor: 'pointer',
-          }}>
-            &larr; Back to topics
-          </span>
-        </Link>
-      </div>
-
+    <div style={{ background: 'var(--bg)' }}>
       {a ? (
         <div className="sd-body" style={{
           maxWidth: 'var(--content-width)',

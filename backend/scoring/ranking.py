@@ -13,10 +13,12 @@ Also assigns a featured_reason string explaining why the topic ranked.
 No AI calls.  Reads from stories + analyses tables.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import (
     get_active_stories,
@@ -52,11 +54,11 @@ def _recency_factor(story: dict) -> float:
     try:
         dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
     except (ValueError, TypeError):
         return 0.0
 
-    hours_ago = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
+    hours_ago = (datetime.now(UTC) - dt).total_seconds() / 3600
     if hours_ago < 1:
         return 100.0
     # Decay so that ~72h -> ~5

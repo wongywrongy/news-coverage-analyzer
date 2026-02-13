@@ -4,10 +4,12 @@ Reads pre-aggregated daily counts and builds continuous trend arrays
 with zero-filled gaps, suitable for frontend timeline visualization.
 """
 
-import logging
-from datetime import datetime, timedelta, timezone
+from __future__ import annotations
 
-from db.queries import get_daily_counts, get_active_stories
+import logging
+from datetime import UTC, datetime, timedelta
+
+from db.queries import get_active_stories, get_daily_counts
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ def compute_trend_from_counts(daily_counts: list[dict]) -> list[dict]:
     except ValueError:
         return []
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     # Fill every day from first_day to today
     trend: list[dict] = []

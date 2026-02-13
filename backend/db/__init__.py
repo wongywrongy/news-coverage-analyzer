@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from db.client import get_client
 from db.migrations import run_migrations
 

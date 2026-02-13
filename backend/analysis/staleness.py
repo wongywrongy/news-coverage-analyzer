@@ -4,8 +4,10 @@ Called by the generator to decide what to regenerate.
 Lightweight — no API calls, just DB reads and math.
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from config.settings import settings
 from config.sources import SOURCE_BIAS
@@ -64,9 +66,9 @@ def _analysis_is_stale(story: dict, analysis: dict | None) -> bool:
         else:
             updated_at = updated_at_raw
         if updated_at.tzinfo is None:
-            updated_at = updated_at.replace(tzinfo=timezone.utc)
+            updated_at = updated_at.replace(tzinfo=UTC)
 
-        age_hours = (datetime.now(timezone.utc) - updated_at).total_seconds() / 3600
+        age_hours = (datetime.now(UTC) - updated_at).total_seconds() / 3600
         if age_hours > 12:
             story_updated_raw = story.get("last_updated")
             if story_updated_raw:
@@ -75,7 +77,7 @@ def _analysis_is_stale(story: dict, analysis: dict | None) -> bool:
                 else:
                     story_updated = story_updated_raw
                 if story_updated.tzinfo is None:
-                    story_updated = story_updated.replace(tzinfo=timezone.utc)
+                    story_updated = story_updated.replace(tzinfo=UTC)
 
                 if story_updated > updated_at:
                     return True
@@ -217,7 +219,6 @@ def get_stories_needing_analysis(max_results: int = 10) -> list[int]:
 
 if __name__ == "__main__":
     import os
-    import sys
 
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     logging.basicConfig(level="INFO", format="%(name)s | %(message)s")

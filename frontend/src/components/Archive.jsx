@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import Link from 'next/link';
 import TopicRow from './TopicRow';
-import Footer from './Footer';
 import {
   CATEGORY_GROUPS,
   getPrimaryCategory,
@@ -13,6 +11,8 @@ import {
 const PAGE_SIZE = 15;
 
 const SORT_OPTIONS = [
+  { value: 'hottest', label: 'Hottest first' },
+  { value: 'coverage_gap', label: 'Coverage gap' },
   { value: 'newest', label: 'Newest first' },
   { value: 'impact', label: 'Impact: high to low' },
   { value: 'articles', label: 'Most articles' },
@@ -26,6 +26,16 @@ const TABS = [
 function sortStories(stories, sortKey) {
   const sorted = [...stories];
   switch (sortKey) {
+    case 'hottest':
+      sorted.sort((a, b) => (b.heat || 0) - (a.heat || 0));
+      break;
+    case 'coverage_gap':
+      sorted.sort((a, b) => {
+        const gapA = (a.impact_score || 0) - (a.coverage_score || a.attention_score || 0);
+        const gapB = (b.impact_score || 0) - (b.coverage_score || b.attention_score || 0);
+        return gapB - gapA;
+      });
+      break;
     case 'impact':
       sorted.sort((a, b) => (b.impact_score || 0) - (a.impact_score || 0));
       break;
@@ -42,7 +52,7 @@ function sortStories(stories, sortKey) {
 
 export default function Archive({ stories }) {
   const [selGroup, setSelGroup] = useState(null);
-  const [sort, setSort] = useState('newest');
+  const [sort, setSort] = useState('hottest');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
@@ -85,140 +95,121 @@ export default function Archive({ stories }) {
   const hasFilters = selGroup || search.trim();
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Sticky nav */}
-      <nav className="archive-nav" style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'rgba(250,250,247,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-        padding: '14px 48px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'Playfair Display', serif",
-          fontWeight: 800,
-          fontSize: 22,
-          color: 'var(--ink)',
-          textDecoration: 'none',
-          letterSpacing: '-0.5px',
-        }}>
-          Clear<span style={{ color: 'var(--accent-gold)' }}>Signal</span>
-        </Link>
-        <span style={{
-          fontSize: 12,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '1.5px',
-          color: 'var(--accent-blue-deep)',
-        }}>
-          Archive
-        </span>
-      </nav>
-
+    <div style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <header style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        padding: '48px 48px 0',
-      }}>
-        <div className="archive-header" style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 16,
-          paddingBottom: 16,
-          borderBottom: '2px solid var(--ink)',
-        }}>
-          {/* Left: title + count */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-            <h1 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontWeight: 900,
-              fontSize: 36,
-              letterSpacing: '-1px',
-              lineHeight: 1.1,
-            }}>
-              Archive
-            </h1>
-            <span style={{
-              fontSize: 12,
-              color: 'var(--ink-muted)',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              {stories.length} topics
-            </span>
-          </div>
-
-          {/* Right: sort + search */}
-          <div className="archive-controls" style={{
+      <div style={{ padding: '0 48px' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div className="archive-header" style={{
+            paddingTop: 12,
+            marginBottom: 'var(--space-md)',
+            paddingBottom: 'var(--space-sm)',
+            borderBottom: '2px solid var(--ink)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: 12,
           }}>
-            <select
-              value={sort}
-              onChange={handleSortChange}
-              style={{
-                padding: '7px 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-card)',
+            {/* Left: title + count */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '1.5px',
                 color: 'var(--ink)',
-                fontSize: 13,
-                fontFamily: "'DM Sans', sans-serif",
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              {SORT_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              }}>
+                Archive
+              </span>
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: 'var(--ink-muted)',
+              }}>
+                {stories.length} topics
+              </span>
+            </div>
 
-            <div style={{ position: 'relative', width: 180 }}>
-              <svg
+            {/* Right: sort + search */}
+            <div className="archive-controls" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}>
+              <select
+                value={sort}
+                onChange={handleSortChange}
                 style={{
-                  position: 'absolute', left: 10, top: '50%',
-                  transform: 'translateY(-50%)', width: 14, height: 14,
-                  color: 'var(--ink-muted)',
-                }}
-                fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={handleSearch}
-                style={{
-                  width: '100%',
-                  padding: '7px 12px 7px 30px',
+                  padding: '5px 10px',
                   borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border)',
-                  background: 'var(--bg-card)',
+                  background: 'var(--bg)',
                   color: 'var(--ink)',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontFamily: "'DM Sans', sans-serif",
+                  cursor: 'pointer',
                   outline: 'none',
                 }}
-              />
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--accent-gold)';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(200,150,62,0.1)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                {SORT_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+
+              <div style={{ position: 'relative', width: 180 }}>
+                <svg
+                  style={{
+                    position: 'absolute', left: 8, top: '50%',
+                    transform: 'translateY(-50%)', width: 13, height: 13,
+                    color: 'var(--ink-muted)',
+                  }}
+                  fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search topics..."
+                  value={search}
+                  onChange={handleSearch}
+                  style={{
+                    width: '100%',
+                    padding: '5px 10px 5px 26px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg)',
+                    color: 'var(--ink)',
+                    fontSize: 12,
+                    fontFamily: "'DM Sans', sans-serif",
+                    outline: 'none',
+                  }}
+                  onFocus={e => {
+                    e.currentTarget.style.borderColor = 'var(--accent-gold)';
+                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(200,150,62,0.1)';
+                  }}
+                  onBlur={e => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Category tabs */}
       <div style={{
-        maxWidth: 1280,
+        maxWidth: 1080,
         margin: '0 auto',
         padding: '0 48px',
       }}>
@@ -264,9 +255,9 @@ export default function Archive({ stories }) {
 
       {/* Results */}
       <main style={{
-        maxWidth: 1280,
+        maxWidth: 1080,
         margin: '0 auto',
-        padding: '0 48px 80px',
+        padding: 'var(--space-md) 48px 80px',
       }}>
         {/* Results count when filtered */}
         {hasFilters && (
@@ -402,8 +393,6 @@ export default function Archive({ stories }) {
           </>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }

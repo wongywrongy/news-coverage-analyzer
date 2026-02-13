@@ -12,6 +12,8 @@ Usage:
     python -m scripts.migrate_headlines --limit 10    # cap at 10 stories
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -19,7 +21,7 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from difflib import SequenceMatcher
 
 # Ensure backend/ is on the path when run as a module
@@ -29,12 +31,12 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 from anthropic import Anthropic
 
 from config.settings import settings
-from db.client import get_client
 from db import queries as db
+from db.client import get_client
 
 logger = logging.getLogger(__name__)
 
-_HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_HAIKU_MODEL = settings.haiku_model
 _MAX_TOKENS = 256
 _SIMILARITY_THRESHOLD = 0.85
 _RATE_LIMIT_SECONDS = 1.0
@@ -194,7 +196,7 @@ def migrate(apply: bool = False, limit: int | None = None) -> None:
             continue
 
         if not articles:
-            print(f"  Skipping (no articles)")
+            print("  Skipping (no articles)")
             skipped_no_articles += 1
             continue
 
@@ -243,19 +245,19 @@ def migrate(apply: bool = False, limit: int | None = None) -> None:
                 "rationale": rationale,
                 "reason_flagged": reason,
                 "similarity": round(sim, 3),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             migration_log.append(log_entry)
 
             if apply:
                 try:
                     db.update_story_metadata(story_id, topic=new_headline)
-                    print(f"  → Updated")
+                    print("  → Updated")
                 except Exception as exc:
                     print(f"  → WRITE ERROR: {exc}")
                     errors += 1
             else:
-                print(f"  → Will update")
+                print("  → Will update")
                 updates_pending += 1
 
         print()
@@ -267,9 +269,9 @@ def migrate(apply: bool = False, limit: int | None = None) -> None:
         existing_log = []
         if os.path.exists(LOG_FILE):
             try:
-                with open(LOG_FILE, "r", encoding="utf-8") as f:
+                with open(LOG_FILE, encoding="utf-8") as f:
                     existing_log = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 existing_log = []
 
         existing_log.extend(migration_log)
@@ -290,7 +292,7 @@ def migrate(apply: bool = False, limit: int | None = None) -> None:
               f"{skipped_no_articles} skipped (no articles), "
               f"{errors} errors.")
         if updates_pending > 0:
-            print(f"\nRun with --apply to write changes.")
+            print("\nRun with --apply to write changes.")
 
 
 if __name__ == "__main__":

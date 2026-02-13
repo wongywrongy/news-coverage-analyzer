@@ -7,10 +7,12 @@ parameters to find natural sub-clusters within mega-stories and
 split them into separate story rows.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
 
 import hdbscan
 import numpy as np
@@ -204,7 +206,6 @@ def _split_story(
 
     # Sort by size descending — largest stays with original story
     sorted_clusters = sorted(sub_clusters, key=len, reverse=True)
-    largest = sorted_clusters[0]
     smaller = sorted_clusters[1:]
 
     new_story_ids: list[int] = []

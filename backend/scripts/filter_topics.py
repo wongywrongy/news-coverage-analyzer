@@ -12,6 +12,8 @@ Usage:
     python -m scripts.filter_topics --limit 50      # only process 50 stories
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -92,8 +94,8 @@ def score_significance(
                 raw = "\n".join(lines).strip()
 
             scores = json.loads(raw)
-        except Exception:
-            logger.exception("GPT scoring failed for batch starting at index %d", i)
+        except Exception as exc:
+            logger.exception("GPT scoring failed for batch starting at index %d: %s", i, exc)
             stats["errors"] += len(batch)
             continue
 
@@ -114,8 +116,8 @@ def score_significance(
                 db.get_client().table("stories").update(
                     {"significance_score": score}
                 ).eq("id", sid).execute()
-            except Exception:
-                logger.warning("Failed to update significance for story #%d", sid)
+            except Exception as exc:
+                logger.warning("Failed to update significance for story #%d: %s", sid, exc)
                 stats["errors"] += 1
                 continue
 
@@ -125,8 +127,8 @@ def score_significance(
                     db.deactivate_story(sid)
                     stats["deactivated"] += 1
                     logger.info("Deactivated story #%d (significance=%d)", sid, score)
-                except Exception:
-                    logger.warning("Failed to deactivate story #%d", sid)
+                except Exception as exc:
+                    logger.warning("Failed to deactivate story #%d: %s", sid, exc)
 
     return stats
 
@@ -192,8 +194,8 @@ def validate_clusters(
                 if not dry_run:
                     db.deactivate_story(s["id"])
 
-        except Exception:
-            logger.debug("Cluster validation failed for story #%d", s["id"])
+        except Exception as exc:
+            logger.debug("Cluster validation failed for story #%d: %s", s["id"], exc)
             stats["errors"] += 1
 
     return stats
@@ -270,8 +272,8 @@ def rename_topics(
                 raw = "\n".join(lines).strip()
 
             results = json.loads(raw)
-        except Exception:
-            logger.exception("Topic rename failed for batch starting at index %d", i)
+        except Exception as exc:
+            logger.exception("Topic rename failed for batch starting at index %d: %s", i, exc)
             stats["errors"] += len(batch)
             continue
 
@@ -290,8 +292,8 @@ def rename_topics(
             else:
                 try:
                     db.update_story_metadata(sid, topic=new_topic)
-                except Exception:
-                    logger.warning("Failed to rename story #%d", sid)
+                except Exception as exc:
+                    logger.warning("Failed to rename story #%d: %s", sid, exc)
                     stats["errors"] += 1
 
     return stats

@@ -39,6 +39,9 @@ function formatDate(story) {
 }
 
 function BadgeInline({ story }) {
+  if (story.featured_reason === 'undercovered') {
+    return <span style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>undercovered</span>;
+  }
   const biasSpread = story.bias_spread || 0;
   const trend = parseTrend(story);
   const trendDir = computeTrendDirection(trend);
@@ -73,7 +76,7 @@ export default function TopicRow({ story, index = 0 }) {
   const badge = <BadgeInline story={story} />;
 
   return (
-    <Link href={`/story/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+    <Link href={`/topic/${story.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
       <div
         className={`topic-row topic-row-${catClass}`}
         style={{

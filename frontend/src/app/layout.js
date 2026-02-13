@@ -1,4 +1,6 @@
 import './globals.css';
+import NavBar from '../components/NavBar';
+import Footer from '../components/Footer';
 
 export const metadata = {
   title: 'ClearSignal — Same Event. Different Realities.',
@@ -10,11 +12,15 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <NavBar />
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }

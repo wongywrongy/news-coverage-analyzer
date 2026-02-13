@@ -13,8 +13,10 @@ Each gap entry includes caveats acknowledging that coverage data is a
 sample, not a census.
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import get_active_stories
 
@@ -124,8 +126,8 @@ def _build_caveats(story: dict, coverage: float) -> list[str]:
                 first_seen = None
         if first_seen:
             if first_seen.tzinfo is None:
-                first_seen = first_seen.replace(tzinfo=timezone.utc)
-            age_hours = (datetime.now(timezone.utc) - first_seen).total_seconds() / 3600
+                first_seen = first_seen.replace(tzinfo=UTC)
+            age_hours = (datetime.now(UTC) - first_seen).total_seconds() / 3600
             if age_hours < 6:
                 caveats.append(
                     f"Story first seen {age_hours:.0f}h ago — coverage may still be emerging."

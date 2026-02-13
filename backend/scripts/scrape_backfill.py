@@ -9,6 +9,8 @@ Usage:
     python -m scripts.scrape_backfill --limit 500   # scrape up to 500
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import os

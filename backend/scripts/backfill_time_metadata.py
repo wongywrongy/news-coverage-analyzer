@@ -7,8 +7,10 @@ Usage:
     cd backend && .venv/Scripts/python.exe -m scripts.backfill_time_metadata
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import get_active_stories, get_articles_for_story, update_story_metadata
 
@@ -49,7 +51,7 @@ def backfill():
             try:
                 dt = datetime.fromisoformat(raw)
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 pub_dates.append(dt)
             except (ValueError, TypeError):
                 continue
@@ -58,7 +60,7 @@ def backfill():
             skipped += 1
             continue
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         earliest = min(pub_dates)
         latest = max(pub_dates)
 

@@ -7,94 +7,44 @@ export default function Loading() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg, #FAFAF7)' }}>
-      {/* Nav skeleton */}
-      <nav style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '18px 48px',
-        borderBottom: '1px solid #E8E6E1',
-        background: 'rgba(250,250,247,0.9)',
-      }}>
-        <div style={{ width: 140, height: 24, ...shimmerBg }} />
-        <div style={{ display: 'flex', gap: 24 }}>
-          <div style={{ width: 120, height: 16, ...shimmerBg }} />
-          <div style={{ width: 90, height: 16, ...shimmerBg }} />
-        </div>
-      </nav>
-
+    <div style={{ background: 'var(--bg, #FAFAF7)' }}>
       {/* Hero skeleton */}
-      <section style={{ padding: '80px 48px 60px' }}>
-        <div style={{
-          maxWidth: 1280,
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1.1fr',
-          gap: 60,
-          alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ width: '80%', height: 56, marginBottom: 12, ...shimmerBg }} />
-            <div style={{ width: '60%', height: 56, marginBottom: 28, ...shimmerBg }} />
-            <div style={{ width: '90%', height: 16, marginBottom: 8, ...shimmerBg }} />
-            <div style={{ width: '85%', height: 16, marginBottom: 8, ...shimmerBg }} />
-            <div style={{ width: '70%', height: 16, marginBottom: 48, ...shimmerBg }} />
-            <div style={{ display: 'flex', gap: 40 }}>
-              {[0, 1, 2].map(i => (
-                <div key={i}>
-                  <div style={{ width: 48, height: 32, marginBottom: 4, ...shimmerBg }} />
-                  <div style={{ width: 80, height: 12, ...shimmerBg }} />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div style={{ width: '100%', height: 240, ...shimmerBg, borderRadius: 12 }} />
+      <section style={{ padding: '60px 48px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div style={{ width: '60%', height: 56, margin: '0 auto 12px', ...shimmerBg }} />
+          <div style={{ width: '40%', height: 56, margin: '0 auto 28px', ...shimmerBg }} />
+          <div style={{ width: '80%', height: 16, margin: '0 auto 8px', ...shimmerBg }} />
+          <div style={{ width: '70%', height: 16, margin: '0 auto 32px', ...shimmerBg }} />
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div style={{ width: 160, height: 44, ...shimmerBg }} />
+            <div style={{ width: 140, height: 44, ...shimmerBg }} />
           </div>
         </div>
       </section>
 
-      {/* Tabs skeleton */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 48px' }}>
-        <div style={{
-          display: 'flex',
-          gap: 4,
-          borderBottom: '2px solid #E8E6E1',
-          paddingBottom: 14,
-        }}>
-          {[60, 100, 110, 120, 100].map((w, i) => (
-            <div key={i} style={{ width: w, height: 16, ...shimmerBg }} />
-          ))}
-        </div>
+      {/* Stats skeleton */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 56, padding: '32px 48px', borderTop: '1px solid #E0DED8', borderBottom: '1px solid #E0DED8' }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ textAlign: 'center' }}>
+            <div style={{ width: 48, height: 32, margin: '0 auto 4px', ...shimmerBg }} />
+            <div style={{ width: 100, height: 12, margin: '0 auto', ...shimmerBg }} />
+          </div>
+        ))}
       </div>
 
       {/* Cards skeleton */}
-      <div style={{ maxWidth: 1280, margin: '40px auto 0', padding: '0 48px' }}>
-        {[0, 1, 2, 3].map(i => (
+      <div style={{ maxWidth: 1080, margin: '40px auto 0', padding: '0 48px' }}>
+        {[0, 1, 2].map(i => (
           <div key={i} style={{
             background: '#FFFFFF',
-            border: '1px solid #E8E6E1',
+            border: '1px solid #E0DED8',
             borderRadius: 12,
             padding: '24px 28px',
             marginBottom: 12,
-            display: 'grid',
-            gridTemplateColumns: '1fr auto',
-            gap: 24,
-            alignItems: 'center',
           }}>
-            <div>
-              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 70, height: 20, ...shimmerBg }} />
-                <div style={{ width: 80, height: 16, ...shimmerBg }} />
-              </div>
-              <div style={{ width: '75%', height: 22, marginBottom: 12, ...shimmerBg }} />
-              <div style={{ width: '50%', height: 10, ...shimmerBg }} />
-            </div>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div style={{ width: 56, height: 48, ...shimmerBg }} />
-              <div style={{ width: 56, height: 48, ...shimmerBg }} />
-            </div>
+            <div style={{ width: 70, height: 14, marginBottom: 12, ...shimmerBg }} />
+            <div style={{ width: '75%', height: 22, marginBottom: 12, ...shimmerBg }} />
+            <div style={{ width: '50%', height: 14, ...shimmerBg }} />
           </div>
         ))}
       </div>

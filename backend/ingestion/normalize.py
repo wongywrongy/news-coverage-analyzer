@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import unescape
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from dateutil import parser as dateutil_parser
 
-from config.sources import SOURCE_BIAS
+from config.sources import SOURCE_BIAS, get_source_region
 from models.schemas import Article, RawArticle
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,8 @@ def extract_domain(url: str) -> str:
     try:
         host = urlparse(url).netloc.lower()
         return host.removeprefix("www.")
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to extract domain from URL: %s", exc)
         return ""
 
 
@@ -91,7 +92,8 @@ def normalize_url(url: str) -> str:
 
     try:
         parsed = urlparse(url)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to parse URL %r: %s", url, exc)
         return url
 
     scheme = parsed.scheme.lower()
@@ -168,24 +170,24 @@ def parse_date(raw: str | datetime | None) -> datetime:
     True
     """
     if raw is None:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     if isinstance(raw, datetime):
         if raw.tzinfo is None:
-            return raw.replace(tzinfo=timezone.utc)
+            return raw.replace(tzinfo=UTC)
         return raw
 
     if not isinstance(raw, str) or not raw.strip():
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     try:
         dt = dateutil_parser.parse(raw)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except (ValueError, OverflowError):
         logger.debug("Unparseable date %r — using current time", raw)
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +245,7 @@ def normalize(articles: list[RawArticle]) -> list[Article]:
                 source_domain=domain,
                 source_bias=bias_label,
                 source_bias_score=bias_score,
+                source_region=get_source_region(domain),
             )
         )
 
@@ -312,7 +315,7 @@ if __name__ == "__main__":
             title="US Economy Grows 3.1% in Q1",
             description="Growth exceeded expectations.",
             source_name="AP News",
-            published_at=datetime(2025, 5, 14, 10, 0, tzinfo=timezone.utc),
+            published_at=datetime(2025, 5, 14, 10, 0, tzinfo=UTC),
             raw_source={"type": "googlenews"},
         ),
         # Should be SKIPPED — empty title

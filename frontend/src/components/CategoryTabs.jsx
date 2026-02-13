@@ -15,7 +15,7 @@ export default function CategoryTabs({ selected, onSelect }) {
 
   // Measure nav height for sticky offset
   useEffect(() => {
-    const nav = document.querySelector('.header-nav');
+    const nav = document.querySelector('.navbar');
     if (nav) setNavH(nav.offsetHeight);
   }, []);
 
@@ -43,7 +43,7 @@ export default function CategoryTabs({ selected, onSelect }) {
         transition: 'box-shadow 0.2s',
       }}>
         <div className="tabs-inner" style={{
-          maxWidth: 1280,
+          maxWidth: 1080,
           margin: '0 auto',
           padding: '0 48px',
         }}>

@@ -5,12 +5,17 @@ coverage days, and determines the current lifecycle status (breaking,
 developing, peak, fading, stale).
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import (
-    get_active_stories, get_articles_for_story, update_story_metadata,
-    get_daily_counts, recalculate_daily_counts,
+    get_active_stories,
+    get_articles_for_story,
+    get_daily_counts,
+    recalculate_daily_counts,
+    update_story_metadata,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,7 +51,7 @@ def _compute_trend(articles: list[dict]) -> list[dict]:
         return []
 
     first_day = min(dates).date()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     # Build a count-per-day dict
     counts: dict[str, int] = {}
@@ -183,15 +188,15 @@ def update_timelines(
             if not pub_dates:
                 logger.debug("Story %d has no datable articles, skipping", story_id)
                 continue
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             latest = max(pub_dates)
             earliest = min(pub_dates)
 
             # Ensure timezone-aware
             if latest.tzinfo is None:
-                latest = latest.replace(tzinfo=timezone.utc)
+                latest = latest.replace(tzinfo=UTC)
             if earliest.tzinfo is None:
-                earliest = earliest.replace(tzinfo=timezone.utc)
+                earliest = earliest.replace(tzinfo=UTC)
 
             age_hours = (now - earliest).total_seconds() / 3600
             hours_since_last = (now - latest).total_seconds() / 3600
@@ -233,7 +238,6 @@ def update_timelines(
 
 if __name__ == "__main__":
     import os
-    import sys
 
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     logging.basicConfig(level="INFO", format="%(levelname)s  %(name)s  %(message)s")

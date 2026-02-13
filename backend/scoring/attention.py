@@ -12,8 +12,10 @@ Components (weights sum to 1.0):
   recency_boost  0.10   — decays 4 points per hour since last update
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import (
     get_active_stories,
@@ -60,7 +62,7 @@ def _hours_since(dt: datetime | str | None) -> float | None:
     """Return hours elapsed since *dt*, or None if *dt* is missing."""
     if dt is None:
         return None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if isinstance(dt, str):
         # Supabase returns ISO strings — handle both 'Z' and '+00:00'
         dt = dt.replace("Z", "+00:00")
@@ -69,7 +71,7 @@ def _hours_since(dt: datetime | str | None) -> float | None:
         except ValueError:
             return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     delta = (now - dt).total_seconds() / 3600.0
     return max(0.0, delta)
 
@@ -80,7 +82,7 @@ def _velocity(articles: list[dict]) -> float:
     The count itself is later percentile-ranked across stories, so we
     don't need to convert to articles-per-hour here.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     count = 0
     for a in articles:
         pub = a.get("published_at")
@@ -93,7 +95,7 @@ def _velocity(articles: list[dict]) -> float:
             except ValueError:
                 continue
         if pub.tzinfo is None:
-            pub = pub.replace(tzinfo=timezone.utc)
+            pub = pub.replace(tzinfo=UTC)
         if (now - pub).total_seconds() <= 86_400:
             count += 1
     return float(count)
@@ -253,7 +255,6 @@ def score_attention(
 
 if __name__ == "__main__":
     import os
-    import sys
 
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     logging.basicConfig(level="INFO", format="%(levelname)s  %(name)s  %(message)s")

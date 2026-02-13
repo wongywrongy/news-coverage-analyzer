@@ -5,6 +5,8 @@ Runs the full fetch → normalize → deduplicate → embed → store pipeline
 and returns an IngestionResult with timing and per-source statistics.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
@@ -13,7 +15,7 @@ from collections import defaultdict
 from rich.console import Console
 from rich.table import Table
 
-from config.sources import SOURCE_BIAS
+from config.sources import SOURCE_BIAS, get_source_region
 from db import queries as db
 from ingestion.newsdata import fetch_newsdata
 from ingestion.rss import fetch_all_feeds
@@ -93,6 +95,7 @@ def _normalize_fallback(raw_articles: list[RawArticle]) -> list[Article]:
         data["source_domain"] = raw.source_name
         data["source_bias"] = bias.get("label", "")
         data["source_bias_score"] = bias.get("score", 0.0)
+        data["source_region"] = get_source_region(raw.source_name)
         result.append(Article.model_validate(data))
     return result
 

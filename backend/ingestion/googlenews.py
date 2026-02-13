@@ -17,7 +17,7 @@ import base64
 import logging
 import re
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import unescape
 from time import struct_time
 from urllib.parse import urlparse
@@ -66,7 +66,7 @@ def _parse_date(entry: dict) -> datetime | None:
         value: struct_time | None = entry.get(field)
         if value is not None:
             try:
-                return datetime.fromtimestamp(timegm(value), tz=timezone.utc)
+                return datetime.fromtimestamp(timegm(value), tz=UTC)
             except (ValueError, OverflowError, OSError):
                 continue
     return None
@@ -138,8 +138,8 @@ def _decode_google_url_b64(google_url: str) -> str | None:
         if candidate.startswith(("http://", "https://")):
             return candidate
 
-    except Exception:  # noqa: BLE001
-        logger.debug("Legacy b64 decode failed for: %s", google_url)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Legacy b64 decode failed for: %s: %s", google_url, exc)
 
     return None
 
@@ -156,8 +156,8 @@ def _decode_google_url_api(google_url: str) -> str | None:
         result = gnewsdecoder(google_url, interval=None)
         if result and result.get("status"):
             return result["decoded_url"]
-    except Exception:  # noqa: BLE001
-        logger.debug("API decode failed for: %s", google_url)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("API decode failed for: %s: %s", google_url, exc)
     return None
 
 
@@ -166,7 +166,8 @@ def _extract_domain(url: str) -> str:
     try:
         host = urlparse(url).netloc
         return host.removeprefix("www.")
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to extract domain from URL: %s", exc)
         return ""
 
 
@@ -419,12 +420,12 @@ if __name__ == "__main__":
 
         # Domain distribution
         domains = Counter(_extract_domain(a.url) for a in articles)
-        print(f"\nTop source domains:")
+        print("\nTop source domains:")
         for domain, count in domains.most_common(15):
             print(f"  {domain:30s} {count}")
 
         # Sample articles
-        print(f"\nSample resolved articles:")
+        print("\nSample resolved articles:")
         for art in real_urls[:5]:
             date_str = (
                 art.published_at.strftime("%Y-%m-%d %H:%M")
@@ -440,7 +441,7 @@ if __name__ == "__main__":
             print()
 
         if google_urls:
-            print(f"Sample UNRESOLVED articles:")
+            print("Sample UNRESOLVED articles:")
             for art in google_urls[:3]:
                 print(f"  [{art.source_name}] {art.title}")
                 print(f"    URL: {art.url[:70]}...")

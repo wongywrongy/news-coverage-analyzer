@@ -10,8 +10,10 @@ No AI calls.  Computes a 0-100 score from four weighted components:
 The result is stored as ``coverage_score`` on the story row.
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from db.queries import (
     get_active_stories,
@@ -88,7 +90,7 @@ def _velocity_score(articles: list[dict]) -> float:
     Returns 0-100 (capped).  If prior period has 0 articles but current
     has >0, returns 100.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     last_24h = 0
     prior_24h = 0
 
@@ -101,7 +103,7 @@ def _velocity_score(articles: list[dict]) -> float:
         except (ValueError, TypeError):
             continue
         if pub.tzinfo is None:
-            pub = pub.replace(tzinfo=timezone.utc)
+            pub = pub.replace(tzinfo=UTC)
 
         hours_ago = (now - pub).total_seconds() / 3600
         if hours_ago <= 24:
@@ -149,8 +151,8 @@ def compute_coverage_score(
         try:
             dt = datetime.fromisoformat(str(last_article_at).replace("Z", "+00:00"))
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            hours_since = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
+                dt = dt.replace(tzinfo=UTC)
+            hours_since = (datetime.now(UTC) - dt).total_seconds() / 3600
         except (ValueError, TypeError):
             pass
     rec = _recency_score(hours_since)

@@ -8,6 +8,8 @@ Usage:
     cd backend && .venv/Scripts/python.exe -m scripts.backfill_daily_counts
 """
 
+from __future__ import annotations
+
 import logging
 
 from db.queries import get_active_stories, recalculate_daily_counts

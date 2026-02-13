@@ -5,11 +5,12 @@ All pipeline stages communicate through these Pydantic models.
 Serialisation is handled by Pydantic v2's .model_dump() / .model_validate().
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ── Raw Article ───────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ class Article(BaseModel):
     source_domain: str = ""
     source_bias: str = ""
     source_bias_score: float = 0.0
+    source_region: str = "us"  # "us" or "international"
     embedding: list[float] = Field(default_factory=list)
     sentiment: float = 0.0  # -1.0 negative … +1.0 positive
 

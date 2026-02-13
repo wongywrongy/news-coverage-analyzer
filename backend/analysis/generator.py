@@ -5,9 +5,11 @@ Each analysis synthesizes coverage from across the political spectrum into
 a single, neutral, AP-style briefing with bias contrasts and fact checks.
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from anthropic import Anthropic
 
@@ -265,8 +267,8 @@ def _needs_analysis(story: dict) -> bool:
         if isinstance(generated_at, str):
             generated_at = datetime.fromisoformat(generated_at)
         if generated_at.tzinfo is None:
-            generated_at = generated_at.replace(tzinfo=timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - generated_at).total_seconds() / 3600
+            generated_at = generated_at.replace(tzinfo=UTC)
+        age_hours = (datetime.now(UTC) - generated_at).total_seconds() / 3600
         if age_hours > STALE_HOURS:
             return True
 
@@ -587,8 +589,8 @@ def _call_sonnet(client: Anthropic, system: str, user_msg: str) -> dict | None:
             if attempt == 0:
                 logger.warning("Invalid JSON from Sonnet (attempt 1), retrying")
 
-        except Exception:
-            logger.exception("Sonnet API error (attempt %d)", attempt + 1)
+        except Exception as exc:
+            logger.exception("Sonnet API error (attempt %d): %s", attempt + 1, exc)
             if attempt == 0:
                 continue
             return None

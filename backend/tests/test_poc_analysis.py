@@ -9,6 +9,8 @@ Usage:
 If 0 FAIL -> safe to run: python -m pipeline.poc_analysis
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -167,11 +169,11 @@ def test_poc_script(
     # 2.1 — imports
     try:
         from pipeline.poc_analysis import (  # noqa: F401
+            _gap,
+            _is_eligible,
+            _sentiment_divergence,
             main,
             select_stories,
-            _is_eligible,
-            _gap,
-            _sentiment_divergence,
         )
         PASS("poc_analysis.py imports successfully")
     except Exception as e:
@@ -179,10 +181,9 @@ def test_poc_script(
         return [], {}
 
     from pipeline.poc_analysis import (
-        select_stories,
-        _is_eligible,
         _gap,
         _sentiment_divergence,
+        select_stories,
     )
 
     # Get actual article counts
@@ -193,7 +194,7 @@ def test_poc_script(
     # 2.2 — selects exactly 10
     selected = select_stories(stories, actual_counts)
     if len(selected) == 10:
-        PASS(f"Selected exactly 10 stories")
+        PASS("Selected exactly 10 stories")
     else:
         FAIL(f"{len(selected)} stories selected (expected 10)")
         if not selected:
@@ -376,7 +377,7 @@ def test_prompts(
             )
             WARN(f"  One-sided coverage (all in {which}) — Sonnet can't contrast")
         else:
-            WARN(f"  No headlines found in prompt")
+            WARN("  No headlines found in prompt")
 
         # 3.X.3 — bias placement correct (spot-check one from each side)
         bias_ok = True
@@ -411,7 +412,7 @@ def test_prompts(
                         bias_ok = False
 
         if bias_ok:
-            PASS(f"  Bias placement correct (source_domain lookup)")
+            PASS("  Bias placement correct (source_domain lookup)")
 
         # 3.X.4 — scores in prompt
         impact_val = str(int(story.get("impact_score") or 0))
@@ -419,7 +420,7 @@ def test_prompts(
         if impact_val in user_msg and attention_val in user_msg:
             PASS(f"  Scores included (impact={impact_val}, attention={attention_val})")
         else:
-            FAIL(f"  Scores missing from prompt")
+            FAIL("  Scores missing from prompt")
 
         # 3.X.5 — token estimate
         input_tokens = (len(system) + len(user_msg)) // 4
@@ -469,8 +470,8 @@ def test_cost(
     """Calculate per-story and total cost. Returns total cost."""
     console.rule("[bold]Section 4: Cost Verification[/bold]")
 
-    from db import queries as db
     from analysis.generator import _build_sonnet_prompt
+    from db import queries as db
 
     total_cost = 0.0
     OUTPUT_TOKENS = 800
@@ -704,7 +705,6 @@ if __name__ == "__main__":
 
     # Category coverage
     if selected:
-        from pipeline.poc_analysis import _gap, _sentiment_divergence
 
         cat_counts: dict[str, int] = {}
         for _, cat, _ in selected:

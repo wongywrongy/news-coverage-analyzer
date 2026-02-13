@@ -23,9 +23,10 @@ export default function TopicList({ stories, excludeIds }) {
     }
 
     return [...filtered].sort((a, b) => {
-      const impactA = a.impact_score || 0;
-      const impactB = b.impact_score || 0;
-      return impactB - impactA || a.id - b.id;
+      const heatA = a.heat || 0;
+      const heatB = b.heat || 0;
+      if (heatA !== heatB) return heatB - heatA;
+      return (b.impact_score || 0) - (a.impact_score || 0) || a.id - b.id;
     });
   }, [stories, selGroup, excludeIds]);
 
@@ -41,7 +42,7 @@ export default function TopicList({ stories, excludeIds }) {
     <>
       <CategoryTabs selected={selGroup} onSelect={handleGroupSelect} />
 
-      <main className="topic-list" style={{ maxWidth: 1280, margin: '0 auto', padding: 'var(--space-md) 48px 80px' }}>
+      <main className="topic-list" style={{ maxWidth: 1080, margin: '0 auto', padding: 'var(--space-md) 48px 80px' }}>
         {sortedStories.length === 0 ? (
           <div style={{
             textAlign: 'center',

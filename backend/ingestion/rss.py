@@ -11,7 +11,7 @@ import asyncio
 import logging
 import re
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import unescape
 from time import struct_time
 
@@ -58,7 +58,7 @@ def _parse_date(entry: dict) -> datetime | None:
         value: struct_time | None = entry.get(field)
         if value is not None:
             try:
-                return datetime.fromtimestamp(timegm(value), tz=timezone.utc)
+                return datetime.fromtimestamp(timegm(value), tz=UTC)
             except (ValueError, OverflowError, OSError):
                 continue
     return None

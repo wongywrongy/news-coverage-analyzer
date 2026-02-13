@@ -17,26 +17,23 @@ Enhancement is cached: Haiku is only called when the underlying insight changes
 when both insights change, $0 when unchanged.
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+from config.settings import settings
+from constants import (
+    MIN_TOPICS_PER_CATEGORY,
+    SURGING_THRESHOLD,
+    UNDERCOVERED_THRESHOLD,
+)
 from db.queries import get_active_stories, get_cached_insights, set_cached_insights
 
 logger = logging.getLogger(__name__)
 
-# ── Constants ────────────────────────────────────────────────────────────────
-
-# Minimum gap to flag a category as undercovered
-UNDERCOVERED_THRESHOLD = 15
-
-# Minimum % increase to flag a category as surging
-SURGING_THRESHOLD = 0.20  # 20%
-
-# Minimum topics in a category for it to be considered
-MIN_TOPICS_PER_CATEGORY = 3
-
-_HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_HAIKU_MODEL = settings.haiku_model
 _MAX_TOKENS = 60
 
 CATEGORY_GROUPS = {
@@ -95,17 +92,17 @@ def _parse_trend(story: dict) -> list[dict]:
 
 def _get_recent_dates() -> tuple[str, str, str, str]:
     """Return (today, yesterday, 2_days_ago, 3_days_ago) as YYYY-MM-DD."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     ms_per_day = 86400
     today = now.strftime("%Y-%m-%d")
     yesterday = (
-        datetime.fromtimestamp(now.timestamp() - ms_per_day, tz=timezone.utc)
+        datetime.fromtimestamp(now.timestamp() - ms_per_day, tz=UTC)
     ).strftime("%Y-%m-%d")
     two_ago = (
-        datetime.fromtimestamp(now.timestamp() - 2 * ms_per_day, tz=timezone.utc)
+        datetime.fromtimestamp(now.timestamp() - 2 * ms_per_day, tz=UTC)
     ).strftime("%Y-%m-%d")
     three_ago = (
-        datetime.fromtimestamp(now.timestamp() - 3 * ms_per_day, tz=timezone.utc)
+        datetime.fromtimestamp(now.timestamp() - 3 * ms_per_day, tz=UTC)
     ).strftime("%Y-%m-%d")
     return today, yesterday, two_ago, three_ago
 
@@ -344,7 +341,6 @@ def _enhance_insight_text(
     """
     try:
         from anthropic import Anthropic
-        from config.settings import settings
 
         client = Anthropic(api_key=settings.anthropic_api_key)
     except Exception as exc:

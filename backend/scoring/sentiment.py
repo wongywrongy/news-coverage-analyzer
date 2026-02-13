@@ -11,6 +11,8 @@ Depends on: db.queries (get_active_stories, get_articles_for_story,
             update_article_sentiment, update_story_metadata)
 """
 
+from __future__ import annotations
+
 import logging
 from statistics import mean
 
@@ -195,7 +197,6 @@ def analyze_sentiment(
 
 if __name__ == "__main__":
     import os
-    import sys
 
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     logging.basicConfig(level="INFO", format="%(levelname)-8s %(name)s: %(message)s")

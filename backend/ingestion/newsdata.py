@@ -11,7 +11,7 @@ API docs: https://newsdata.io/documentation
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -49,7 +49,7 @@ def _parse_iso_date(value: str | None) -> datetime | None:
     try:
         dt = datetime.fromisoformat(value)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except (ValueError, TypeError):
         return None
@@ -60,7 +60,8 @@ def _extract_domain(url: str) -> str:
     try:
         host = urlparse(url).netloc
         return host.removeprefix("www.")
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to extract domain from URL: %s", exc)
         return ""
 
 

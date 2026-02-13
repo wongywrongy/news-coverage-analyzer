@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from models.schemas import (
-    RawArticle,
-    Article,
-    Story,
     Analysis,
+    Article,
     IngestionResult,
+    RawArticle,
+    Story,
 )
 
 __all__ = [

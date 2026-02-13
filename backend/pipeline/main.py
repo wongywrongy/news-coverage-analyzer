@@ -15,6 +15,8 @@ Usage:
     python -m pipeline.main ingest --dry-run # dry-run a specific stage
 """
 
+from __future__ import annotations
+
 import argparse
 import importlib
 import logging
@@ -22,7 +24,7 @@ import signal
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -81,13 +83,16 @@ BANNER = r"""
 """
 
 STAGES = {
-    "ingest":   "Fetch, normalize, deduplicate, embed, store",
-    "cluster":  "Assign, discover, split, label, rename, merge, validate",
-    "validate": "Filter non-current topics (historical, evergreen)",
-    "score":    "Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights",
-    "select":   "GPT-4o-mini editorial selection for analysis",
-    "scrape":   "Extract article bodies via trafilatura",
-    "analyze":  "Generate Claude-powered neutral analyses",
+    "ingest":    "Fetch, normalize, deduplicate, embed, store",
+    "cluster":   "Assign, discover, split, label, rename, merge, validate",
+    "validate":  "Filter non-current topics (historical, evergreen)",
+    "entities":  "Extract named entities from topics (GPT-4o-mini)",
+    "graph":     "Update entity graph (edges, strengths, importance)",
+    "score":     "Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights",
+    "heat":      "Recompute heat scores (front-page prominence, no AI)",
+    "select":    "GPT-4o-mini editorial selection for analysis",
+    "scrape":    "Extract article bodies via trafilatura",
+    "analyze":   "Generate Claude-powered neutral analyses",
 }
 
 
@@ -163,11 +168,49 @@ def stage_validate() -> None:
     _print_done(time.time() - t0)
 
 
+def stage_entities() -> None:
+    """Run the entity extraction stage."""
+    _print_stage_header("Entities", STAGES["entities"])
+    t0 = time.time()
+    from pipeline.extract_entities import extract_entities
+    result = extract_entities()
+    console.print(
+        f"  Extracted: {result['extracted']}, "
+        f"Entities found: {result['entities_found']}, "
+        f"Errors: {result['errors']}"
+    )
+    _print_done(time.time() - t0)
+
+
+def stage_graph() -> None:
+    """Run the graph update stage."""
+    _print_stage_header("Graph", STAGES["graph"])
+    t0 = time.time()
+    from pipeline.update_graph import update_graph
+    result = update_graph()
+    console.print(
+        f"  Edges: {result['edges_created']}, "
+        f"Strengths: {result['strengths_updated']}, "
+        f"Entities updated: {result['entities_updated']}"
+    )
+    _print_done(time.time() - t0)
+
+
 def stage_score() -> None:
     """Run the score stage."""
     _print_stage_header("Score", STAGES["score"])
     t0 = time.time()
     run_scoring()
+    _print_done(time.time() - t0)
+
+
+def stage_heat() -> None:
+    """Run the heat scoring stage (standalone recompute)."""
+    _print_stage_header("Heat", STAGES["heat"])
+    t0 = time.time()
+    from scoring.heat import score_heat
+    result = score_heat()
+    console.print(f"  Scored: {result['scored']} stories")
     _print_done(time.time() - t0)
 
 
@@ -197,13 +240,16 @@ def stage_analyze() -> None:
 
 
 STAGE_RUNNERS = {
-    "ingest":   stage_ingest,
-    "cluster":  stage_cluster,
-    "validate": stage_validate,
-    "score":    stage_score,
-    "select":   stage_select,
-    "scrape":   stage_scrape,
-    "analyze":  stage_analyze,
+    "ingest":    stage_ingest,
+    "cluster":   stage_cluster,
+    "validate":  stage_validate,
+    "entities":  stage_entities,
+    "graph":     stage_graph,
+    "score":     stage_score,
+    "heat":      stage_heat,
+    "select":    stage_select,
+    "scrape":    stage_scrape,
+    "analyze":   stage_analyze,
 }
 
 
@@ -301,7 +347,7 @@ def run_daemon(interval_minutes: int = 15) -> None:
         trigger=IntervalTrigger(minutes=interval_minutes),
         id="ingestion",
         name="ClearSignal pipeline",
-        next_run_time=datetime.now(timezone.utc),
+        next_run_time=datetime.now(UTC),
         max_instances=1,
         coalesce=True,
     )
@@ -330,7 +376,10 @@ def main() -> None:
             "  ingest    Fetch, normalize, deduplicate, embed, store\n"
             "  cluster   Assign, discover, split, label, rename, merge, validate\n"
             "  validate  Filter non-current topics (standalone)\n"
+            "  entities  Extract named entities from topics\n"
+            "  graph     Update entity graph (edges, strengths, importance)\n"
             "  score     Impact, coverage, attention, sentiment, timeline, gaps, ranking, insights\n"
+            "  heat      Recompute heat scores (front-page prominence, no AI)\n"
             "  select    GPT-4o-mini editorial selection for analysis\n"
             "  scrape    Extract article bodies via trafilatura\n"
             "  analyze   Generate Claude-powered neutral analyses\n"
@@ -338,6 +387,8 @@ def main() -> None:
             "examples:\n"
             "  python -m pipeline.main                  Full pipeline\n"
             "  python -m pipeline.main ingest           Ingest only\n"
+            "  python -m pipeline.main entities         Extract entities only\n"
+            "  python -m pipeline.main graph            Update entity graph only\n"
             "  python -m pipeline.main select           Select only\n"
             "  python -m pipeline.main analyze          Analyze only\n"
             "  python -m pipeline.main --daemon         Daemon mode\n"

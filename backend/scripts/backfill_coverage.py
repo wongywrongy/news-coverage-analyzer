@@ -7,6 +7,8 @@ Usage:
     cd backend && .venv/Scripts/python.exe -m scripts.backfill_coverage
 """
 
+from __future__ import annotations
+
 import logging
 
 from scoring.coverage import score_coverage

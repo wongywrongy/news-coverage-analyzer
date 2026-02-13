@@ -5,10 +5,12 @@ match any existing story.  Groups them into new clusters, creates Story
 rows, and assigns the articles.
 """
 
+from __future__ import annotations
+
 import logging
 import re
-from datetime import datetime, timezone
 from collections import defaultdict
+from datetime import UTC, datetime
 
 import hdbscan
 import numpy as np
@@ -62,7 +64,7 @@ def discover_new_clusters(
         return result
 
     # 2. Age filter -------------------------------------------------------
-    cutoff = datetime.now(timezone.utc).timestamp() - (max_article_age_hours * 3600)
+    cutoff = datetime.now(UTC).timestamp() - (max_article_age_hours * 3600)
     recent: list[dict] = []
     for art in articles:
         pub = art.get("published_at")

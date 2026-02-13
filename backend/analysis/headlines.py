@@ -6,6 +6,8 @@ then uses the article headlines in the cluster to generate a better one.
 Cost: ~$0.001 per story (Haiku input + output tokens).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import re
@@ -17,7 +19,7 @@ from db import queries as db
 
 logger = logging.getLogger(__name__)
 
-_HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_HAIKU_MODEL = settings.haiku_model
 _MAX_TOKENS = 256
 
 _VAGUE_WORDS = {"various", "multiple", "several", "different", "numerous", "many", "some"}
