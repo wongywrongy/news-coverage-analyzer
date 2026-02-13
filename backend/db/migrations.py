@@ -8,6 +8,8 @@ Usage:
     python -m db.migrations
 """
 
+from __future__ import annotations
+
 import logging
 
 from db.client import get_client
@@ -63,18 +65,20 @@ CREATE TABLE IF NOT EXISTS stories (
 
 CREATE_ANALYSES = """
 CREATE TABLE IF NOT EXISTS analyses (
-    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    story_id        BIGINT NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,
-    headline        TEXT DEFAULT '',
-    dateline        TEXT DEFAULT '',
-    lede            TEXT DEFAULT '',
-    context         TEXT DEFAULT '',
-    contrasts       TEXT DEFAULT '',
-    facts           TEXT DEFAULT '',
-    bottom_line     TEXT DEFAULT '',
-    coverage_note   TEXT DEFAULT '',
-    created_at      TIMESTAMPTZ DEFAULT now(),
-    updated_at      TIMESTAMPTZ DEFAULT now()
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    story_id             BIGINT NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,
+    headline             TEXT DEFAULT '',
+    dateline             VARCHAR(128) DEFAULT '',
+    lede                 TEXT DEFAULT '',
+    context              TEXT DEFAULT '',
+    contrasts            JSONB DEFAULT '[]'::jsonb,
+    facts                JSONB DEFAULT '[]'::jsonb,
+    bottom_line          TEXT DEFAULT '',
+    coverage_note        TEXT DEFAULT '',
+    generated_at         TIMESTAMPTZ DEFAULT now(),
+    article_count_at_gen INT DEFAULT 0,
+    created_at           TIMESTAMPTZ DEFAULT now(),
+    updated_at           TIMESTAMPTZ DEFAULT now()
 );
 """
 
@@ -136,6 +140,194 @@ BEGIN
 END $$;
 """
 
+# ── Analyses table schema upgrade (idempotent) ───────────────────────────────
+
+UPGRADE_ANALYSES = """
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS article_count_at_gen INT DEFAULT 0;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS generated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'analyses' AND column_name = 'contrasts' AND data_type = 'text'
+    ) THEN
+        ALTER TABLE analyses ALTER COLUMN contrasts DROP DEFAULT;
+        ALTER TABLE analyses
+            ALTER COLUMN contrasts TYPE JSONB USING COALESCE(contrasts::jsonb, '[]'::jsonb);
+        ALTER TABLE analyses ALTER COLUMN contrasts SET DEFAULT '[]'::jsonb;
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'analyses' AND column_name = 'facts' AND data_type = 'text'
+    ) THEN
+        ALTER TABLE analyses ALTER COLUMN facts DROP DEFAULT;
+        ALTER TABLE analyses
+            ALTER COLUMN facts TYPE JSONB USING COALESCE(facts::jsonb, '[]'::jsonb);
+        ALTER TABLE analyses ALTER COLUMN facts SET DEFAULT '[]'::jsonb;
+    END IF;
+END $$;
+"""
+
+# ── Stories + Analyses schema upgrades (5-factor scoring + guardrails) ────────
+
+UPGRADE_STORIES_SCORING = """
+-- 5-factor significance scoring columns
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS significance_score INT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS significance_factors JSONB;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS confidence TEXT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS caveats TEXT[];
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS population_affected TEXT DEFAULT '';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS impact_scored_at TIMESTAMPTZ;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS scored_at_article_count INT DEFAULT 0;
+
+-- Story metadata columns (may already exist)
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'developing';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS peak_date TEXT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS trend JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS sentiment_left FLOAT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS sentiment_center FLOAT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS sentiment_right FLOAT;
+"""
+
+UPGRADE_STORIES_TIME_METADATA = """
+-- Time metadata for story lifecycle tracking
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS last_article_at TIMESTAMPTZ;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS coverage_velocity FLOAT;
+"""
+
+UPGRADE_ANALYSES_GUARDRAILS = """
+-- Analysis guardrail columns
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS framing_check TEXT;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS source_framings JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS spectrum TEXT DEFAULT '';
+"""
+
+# ── Daily article counts per story ───────────────────────────────────────────
+
+CREATE_STORY_DAILY_COUNTS = """
+CREATE TABLE IF NOT EXISTS story_daily_counts (
+    story_id      BIGINT NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+    date          DATE NOT NULL,
+    article_count INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (story_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_counts_story ON story_daily_counts (story_id);
+"""
+
+ADD_COVERAGE_SCORE = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS coverage_score FLOAT DEFAULT 0.0;
+"""
+
+ADD_CATEGORY_INDEX = """
+CREATE INDEX IF NOT EXISTS idx_stories_category ON stories (category) WHERE active = TRUE;
+"""
+
+ADD_RANK_SCORE = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS rank_score FLOAT DEFAULT 0.0;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS featured_reason TEXT DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_stories_rank ON stories (rank_score DESC) WHERE active = TRUE;
+"""
+
+ADD_SELECTION_COLUMNS = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selected_for_analysis BOOLEAN DEFAULT FALSE;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selection_reason TEXT DEFAULT '';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS selection_priority INT;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS last_selected_at TIMESTAMPTZ;
+"""
+
+CREATE_INSIGHTS_CACHE = """
+CREATE TABLE IF NOT EXISTS insights_cache (
+    id              INT PRIMARY KEY DEFAULT 1,
+    insights        JSONB DEFAULT '[]'::jsonb,
+    computed_at     TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT insights_cache_singleton CHECK (id = 1)
+);
+INSERT INTO insights_cache (id, insights) VALUES (1, '[]'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+"""
+
+# ── Entity graph tables ──────────────────────────────────────────────────────
+
+CREATE_ENTITIES = """
+CREATE TABLE IF NOT EXISTS entities (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    canonical_name  TEXT NOT NULL UNIQUE,
+    entity_type     VARCHAR(20) NOT NULL,
+    aliases         JSONB DEFAULT '[]'::jsonb,
+    first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    topic_count     INT DEFAULT 0,
+    importance      FLOAT DEFAULT 0.0,
+    metadata        JSONB DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(entity_type);
+CREATE INDEX IF NOT EXISTS idx_entities_importance ON entities(importance DESC);
+CREATE INDEX IF NOT EXISTS idx_entities_name ON entities(canonical_name);
+"""
+
+CREATE_TOPIC_ENTITIES = """
+CREATE TABLE IF NOT EXISTS topic_entities (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    topic_id    BIGINT REFERENCES stories(id) ON DELETE CASCADE,
+    entity_id   BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    relevance   VARCHAR(10) NOT NULL DEFAULT 'secondary',
+    extracted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(topic_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_topic_entities_topic ON topic_entities(topic_id);
+CREATE INDEX IF NOT EXISTS idx_topic_entities_entity ON topic_entities(entity_id);
+"""
+
+CREATE_ENTITY_RELATIONSHIPS = """
+CREATE TABLE IF NOT EXISTS entity_relationships (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    entity_a_id     BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    entity_b_id     BIGINT REFERENCES entities(id) ON DELETE CASCADE,
+    co_occurrence   INT DEFAULT 1,
+    strength        FLOAT DEFAULT 0.0,
+    first_linked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_linked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(entity_a_id, entity_b_id),
+    CHECK(entity_a_id < entity_b_id)
+);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_a ON entity_relationships(entity_a_id);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_b ON entity_relationships(entity_b_id);
+CREATE INDEX IF NOT EXISTS idx_entity_rel_strength ON entity_relationships(strength DESC);
+"""
+
+ADD_HEAT_COLUMNS = """
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS heat FLOAT DEFAULT 0.0;
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS heat_updated_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_stories_heat ON stories (heat DESC) WHERE active = TRUE;
+"""
+
+ADD_US_FOCUS_COLUMNS = """
+-- Source region tracking on articles
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS source_region TEXT DEFAULT 'us';
+
+-- US connection metadata on stories
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS us_connection_type TEXT DEFAULT '';
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS us_connection_note TEXT DEFAULT '';
+"""
+
+CREATE_UPSERT_DAILY_COUNT_RPC = """
+CREATE OR REPLACE FUNCTION upsert_daily_count(
+    p_story_id bigint,
+    p_date date,
+    p_delta int DEFAULT 1
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO story_daily_counts (story_id, date, article_count)
+    VALUES (p_story_id, p_date, GREATEST(p_delta, 0))
+    ON CONFLICT (story_id, date)
+    DO UPDATE SET article_count = GREATEST(story_daily_counts.article_count + p_delta, 0);
+END;
+$$;
+"""
+
 # ── Migration runner ──────────────────────────────────────────────────────────
 
 MIGRATION_STEPS: list[tuple[str, str]] = [
@@ -147,6 +339,22 @@ MIGRATION_STEPS: list[tuple[str, str]] = [
     ("Create vector similarity indexes", CREATE_VECTOR_INDEXES),
     ("Create match_story_centroid RPC", CREATE_MATCH_RPC),
     ("Add articles → stories FK",       ADD_FK_ARTICLES_STORY),
+    ("Upgrade analyses table schema",   UPGRADE_ANALYSES),
+    ("Upgrade stories for 5-factor scoring", UPGRADE_STORIES_SCORING),
+    ("Upgrade analyses for guardrails", UPGRADE_ANALYSES_GUARDRAILS),
+    ("Upgrade stories for time metadata", UPGRADE_STORIES_TIME_METADATA),
+    ("Create story_daily_counts table", CREATE_STORY_DAILY_COUNTS),
+    ("Create upsert_daily_count RPC",   CREATE_UPSERT_DAILY_COUNT_RPC),
+    ("Add coverage_score to stories",   ADD_COVERAGE_SCORE),
+    ("Add category index on stories",   ADD_CATEGORY_INDEX),
+    ("Add rank_score to stories",        ADD_RANK_SCORE),
+    ("Create insights cache table",      CREATE_INSIGHTS_CACHE),
+    ("Add selection columns to stories", ADD_SELECTION_COLUMNS),
+    ("Create entities table",            CREATE_ENTITIES),
+    ("Create topic_entities table",      CREATE_TOPIC_ENTITIES),
+    ("Create entity_relationships table", CREATE_ENTITY_RELATIONSHIPS),
+    ("Add heat columns to stories",      ADD_HEAT_COLUMNS),
+    ("Add US focus columns",              ADD_US_FOCUS_COLUMNS),
 ]
 
 

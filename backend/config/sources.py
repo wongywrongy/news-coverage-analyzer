@@ -16,6 +16,8 @@ Bias scores follow the AllSides / Ad Fontes scale mapped to [-1, 1]:
 Consumed by: ingestion pipeline, bias-annotation step, analysis prompts.
 """
 
+from __future__ import annotations
+
 # ── RSS Feeds ─────────────────────────────────────────────────────────────────
 # ~40 feeds spanning the full political spectrum.
 
@@ -26,7 +28,7 @@ RSS_FEEDS: dict[str, str] = {
     "https://theintercept.com/feed/?rss": "theintercept.com",
 
     # ── Left ──────────────────────────────────────────────
-    "https://feeds.feedburner.com/ndabortnow": "motherjones.com",  # BROKEN 404 — feedburner dead
+    "https://www.motherjones.com/feed/": "motherjones.com",
     "https://www.thenation.com/feed/": "thenation.com",
     "https://slate.com/feeds/all.rss": "slate.com",
     "https://www.vox.com/rss/index.xml": "vox.com",
@@ -38,7 +40,7 @@ RSS_FEEDS: dict[str, str] = {
     "https://www.theguardian.com/us-news/rss": "theguardian.com",
     "https://feeds.nbcnews.com/nbcnews/public/news": "nbcnews.com",
     "https://feeds.abcnews.com/abcnews/topstories": "abcnews.go.com",
-    "https://feeds.cbsnews.com/CBSNewsMain": "cbsnews.com",  # BROKEN ConnectError
+    "https://www.cbsnews.com/latest/rss/main": "cbsnews.com",
     "https://feeds.npr.org/1001/rss.xml": "npr.org",
     # Politico: direct RSS returns 403, OpenRSS times out
     # OpenRSS fallback: https://openrss.org/politico.com/
@@ -56,10 +58,12 @@ RSS_FEEDS: dict[str, str] = {
     # AP News: old feeds and .rss suffix all dead
     # RSShub fallback: https://rsshub.app/apnews/topics/ap-top-news (403 from some networks)
     "https://news.google.com/rss/search?q=when:24h+allinurl:apnews.com&ceid=US:en&hl=en-US&gl=US": "apnews.com",
-    "https://feeds.feedburner.com/TheHill/News": "thehill.com",  # BROKEN 404 — feedburner dead
+    "https://thehill.com/feed/": "thehill.com",
     "https://www.pbs.org/newshour/feeds/rss/headlines": "pbs.org",
-    "https://www.csmonitor.com/rss/all": "csmonitor.com",  # BROKEN 404
-    "https://www.usatoday.com/rss/": "usatoday.com",  # BROKEN 404
+    # csmonitor.com — old /rss/all endpoint dead, use Google News proxy
+    "https://news.google.com/rss/search?q=when:24h+allinurl:csmonitor.com&ceid=US:en&hl=en-US&gl=US": "csmonitor.com",
+    # usatoday.com — old /rss/ endpoint dead, use Google News proxy
+    "https://news.google.com/rss/search?q=when:24h+allinurl:usatoday.com&ceid=US:en&hl=en-US&gl=US": "usatoday.com",
 
     # ── Right-Center ──────────────────────────────────────
     "https://feeds.foxnews.com/foxnews/latest": "foxnews.com",
@@ -87,7 +91,8 @@ RSS_FEEDS: dict[str, str] = {
 
     # ── Far Right ─────────────────────────────────────────
     "https://www.breitbart.com/feed/": "breitbart.com",
-    "https://www.newsmax.com/rss/Newsfront/1/": "newsmax.com",  # BROKEN ReadTimeout
+    # newsmax.com — old RSS times out, use Google News proxy
+    "https://news.google.com/rss/search?q=when:24h+allinurl:newsmax.com&ceid=US:en&hl=en-US&gl=US": "newsmax.com",
     "https://www.oann.com/feed/": "oann.com",
     "https://www.dailycaller.com/feed/": "dailycaller.com",
 }
@@ -97,69 +102,72 @@ RSS_FEEDS: dict[str, str] = {
 
 SOURCE_BIAS: dict[str, dict] = {
     # Far left (-1.0)
-    "democracynow.org":      {"label": "far-left",      "score": -1.0},
-    "jacobin.com":           {"label": "far-left",      "score": -1.0},
-    "theintercept.com":      {"label": "far-left",      "score": -0.9},
+    "democracynow.org":      {"label": "far-left",      "score": -1.0, "region": "us",            "primary": True},
+    "jacobin.com":           {"label": "far-left",      "score": -1.0, "region": "us",            "primary": False},
+    "theintercept.com":      {"label": "far-left",      "score": -0.9, "region": "us",            "primary": True},
 
     # Left (-0.6)
-    "motherjones.com":       {"label": "left",          "score": -0.7},
-    "thenation.com":         {"label": "left",          "score": -0.7},
-    "slate.com":             {"label": "left",          "score": -0.6},
-    "vox.com":               {"label": "left",          "score": -0.6},
-    "msnbc.com":             {"label": "left",          "score": -0.7},
+    "motherjones.com":       {"label": "left",          "score": -0.7, "region": "us",            "primary": True},
+    "thenation.com":         {"label": "left",          "score": -0.7, "region": "us",            "primary": False},
+    "slate.com":             {"label": "left",          "score": -0.6, "region": "us",            "primary": True},
+    "vox.com":               {"label": "left",          "score": -0.6, "region": "us",            "primary": True},
+    "msnbc.com":             {"label": "left",          "score": -0.7, "region": "us",            "primary": True},
 
     # Left-center (-0.3)
-    "nytimes.com":           {"label": "left-center",   "score": -0.3},
-    "washingtonpost.com":    {"label": "left-center",   "score": -0.3},
-    "theguardian.com":       {"label": "left-center",   "score": -0.4},
-    "nbcnews.com":           {"label": "left-center",   "score": -0.2},
-    "abcnews.go.com":        {"label": "left-center",   "score": -0.2},
-    "cbsnews.com":           {"label": "left-center",   "score": -0.2},
-    "npr.org":               {"label": "left-center",   "score": -0.3},
-    "politico.com":          {"label": "left-center",   "score": -0.2},
-    "time.com":              {"label": "left-center",   "score": -0.3},
-    "bloomberg.com":         {"label": "left-center",   "score": -0.2},
+    "nytimes.com":           {"label": "left-center",   "score": -0.3, "region": "us",            "primary": True},
+    "washingtonpost.com":    {"label": "left-center",   "score": -0.3, "region": "us",            "primary": True},
+    "theguardian.com":       {"label": "left-center",   "score": -0.4, "region": "international", "primary": True},
+    "nbcnews.com":           {"label": "left-center",   "score": -0.2, "region": "us",            "primary": True},
+    "abcnews.go.com":        {"label": "left-center",   "score": -0.2, "region": "us",            "primary": True},
+    "cbsnews.com":           {"label": "left-center",   "score": -0.2, "region": "us",            "primary": True},
+    "npr.org":               {"label": "left-center",   "score": -0.3, "region": "us",            "primary": True},
+    "politico.com":          {"label": "left-center",   "score": -0.2, "region": "us",            "primary": True},
+    "time.com":              {"label": "left-center",   "score": -0.3, "region": "us",            "primary": True},
+    "bloomberg.com":         {"label": "left-center",   "score": -0.2, "region": "us",            "primary": True},
 
     # Center (0.0)
-    "reuters.com":           {"label": "center",        "score":  0.0},
-    "bbc.com":               {"label": "center",        "score":  0.0},
-    "apnews.com":            {"label": "center",        "score":  0.0},
-    "thehill.com":           {"label": "center",        "score":  0.0},
-    "pbs.org":               {"label": "center",        "score": -0.1},
-    "csmonitor.com":         {"label": "center",        "score":  0.0},
-    "usatoday.com":          {"label": "center",        "score":  0.1},
+    "reuters.com":           {"label": "center",        "score":  0.0, "region": "international", "primary": True},
+    "bbc.com":               {"label": "center",        "score":  0.0, "region": "international", "primary": True},
+    "apnews.com":            {"label": "center",        "score":  0.0, "region": "us",            "primary": True},
+    "thehill.com":           {"label": "center",        "score":  0.0, "region": "us",            "primary": True},
+    "pbs.org":               {"label": "center",        "score": -0.1, "region": "us",            "primary": True},
+    "csmonitor.com":         {"label": "center",        "score":  0.0, "region": "us",            "primary": False},
+    "usatoday.com":          {"label": "center",        "score":  0.1, "region": "us",            "primary": True},
 
     # Right-center (0.3)
-    "foxnews.com":           {"label": "right-center",  "score":  0.4},
-    "aljazeera.com":         {"label": "left-center",   "score": -0.2},
-    "washingtontimes.com":   {"label": "right-center",  "score":  0.4},
-    "wsj.com":               {"label": "right-center",  "score":  0.3},
-    "economist.com":         {"label": "right-center",  "score":  0.2},
-    "forbes.com":            {"label": "right-center",  "score":  0.3},
-    "reason.com":            {"label": "right-center",  "score":  0.4},
+    "foxnews.com":           {"label": "right-center",  "score":  0.4, "region": "us",            "primary": True},
+    "aljazeera.com":         {"label": "left-center",   "score": -0.2, "region": "international", "primary": False},
+    "washingtontimes.com":   {"label": "right-center",  "score":  0.4, "region": "us",            "primary": True},
+    "wsj.com":               {"label": "right-center",  "score":  0.3, "region": "us",            "primary": True},
+    "economist.com":         {"label": "right-center",  "score":  0.2, "region": "international", "primary": True},
+    "forbes.com":            {"label": "right-center",  "score":  0.3, "region": "us",            "primary": True},
+    "reason.com":            {"label": "right-center",  "score":  0.4, "region": "us",            "primary": False},
 
     # Right (0.6)
-    "nationalreview.com":    {"label": "right",         "score":  0.6},
-    "nypost.com":            {"label": "right",         "score":  0.6},
-    "washingtonexaminer.com":{"label": "right",         "score":  0.6},
-    "dailywire.com":         {"label": "right",         "score":  0.7},
-    "thefederalist.com":     {"label": "right",         "score":  0.7},
+    "nationalreview.com":    {"label": "right",         "score":  0.6, "region": "us",            "primary": True},
+    "nypost.com":            {"label": "right",         "score":  0.6, "region": "us",            "primary": True},
+    "washingtonexaminer.com":{"label": "right",         "score":  0.6, "region": "us",            "primary": True},
+    "dailywire.com":         {"label": "right",         "score":  0.7, "region": "us",            "primary": True},
+    "thefederalist.com":     {"label": "right",         "score":  0.7, "region": "us",            "primary": False},
 
     # Far right (1.0)
-    "breitbart.com":         {"label": "far-right",     "score":  0.9},
-    "newsmax.com":           {"label": "far-right",     "score":  0.8},
-    "oann.com":              {"label": "far-right",     "score":  1.0},
-    "dailycaller.com":       {"label": "far-right",     "score":  0.8},
+    "breitbart.com":         {"label": "far-right",     "score":  0.9, "region": "us",            "primary": True},
+    "newsmax.com":           {"label": "far-right",     "score":  0.8, "region": "us",            "primary": True},
+    "oann.com":              {"label": "far-right",     "score":  1.0, "region": "us",            "primary": False},
+    "dailycaller.com":       {"label": "far-right",     "score":  0.8, "region": "us",            "primary": True},
 }
+
+
+def get_source_region(domain: str) -> str:
+    """Return 'us' or 'international' for a source domain. Defaults to 'us'."""
+    return SOURCE_BIAS.get(domain, {}).get("region", "us")
 
 
 if __name__ == "__main__":
     import asyncio
-    import sys
 
     import feedparser
     import httpx
-
     from rich.console import Console
     from rich.table import Table
 

@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClearSignal — How It Works</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --bg-card: #FFFFFF;
+    --bg-warm: #F4F1EB;
+    --bg-dark: #1B1B1B;
+    --ink: #1A1A1A;
+    --ink-secondary: #4A4A4A;
+    --ink-muted: #6B6B6B;
+    --accent-gold: #C8963E;
+    --accent-blue: #2B4C7E;
+    --accent-blue-deep: #1B3155;
+    --cat-politics: #C0392B;
+    --cat-world: #2B4C7E;
+    --cat-economy: #C8963E;
+    --cat-science: #27AE60;
+    --border: #E8E6E1;
+    --radius: 12px;
+    --space-xs: 8px;
+    --space-sm: 16px;
+    --space-md: 24px;
+    --space-lg: 40px;
+    --space-xl: 56px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px; border-bottom: 1px solid var(--border);
+    background: rgba(250,250,247,0.95); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100; height: 58px;
+  }
+  .logo { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; text-decoration: none; color: var(--ink); }
+  .logo span { color: var(--accent-gold); }
+  .nav-back { font-size: 14px; color: var(--ink-muted); text-decoration: none; }
+  .nav-back:hover { color: var(--ink); }
+
+  /* ─── HERO: Cinematic Dark ─── */
+  .hero {
+    background: var(--bg-dark);
+    color: #fff;
+    padding: 80px 48px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(200,150,62,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(43,76,126,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    position: relative;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif; font-weight: 900;
+    font-size: 52px; line-height: 1.05; letter-spacing: -2px;
+    margin-bottom: var(--space-md); max-width: 600px;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent-gold); }
+  .hero-sub {
+    font-size: 17px; line-height: 1.6; color: rgba(255,255,255,0.6);
+    max-width: 480px; margin-bottom: var(--space-xl);
+  }
+
+  /* Pipeline grid */
+  .hero-pipeline {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .hp-cell {
+    padding: 18px 8px 14px;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.2s;
+  }
+  .hp-cell:last-child { border-right: none; }
+  .hp-cell:hover { background: rgba(255,255,255,0.03); }
+  .hp-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: rgba(255,255,255,0.3);
+    margin-bottom: 6px;
+  }
+  .hp-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.7);
+  }
+  .hp-model {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: rgba(255,255,255,0.25);
+    margin-top: 4px;
+  }
+  .hp-cell.final { background: rgba(200,150,62,0.12); }
+  .hp-cell.final .hp-name { color: var(--accent-gold); font-weight: 600; }
+  .hp-cell.final .hp-model { color: rgba(200,150,62,0.5); }
+
+  /* Inline principles */
+  .hero-principles {
+    display: flex;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .hero-principle { flex: 1; }
+  .hero-principle-title {
+    font-size: 13px; font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 4px;
+  }
+  .hero-principle-desc {
+    font-size: 12px; line-height: 1.5;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* ─── STAGE SECTIONS ─── */
+  .stage-section {
+    padding: 80px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stage-section.warm { background: var(--bg-warm); }
+  .stage-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  /* Stage header */
+  .stage-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 500;
+    color: var(--accent-gold);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: var(--space-xs);
+    display: flex; align-items: center; gap: var(--space-sm);
+  }
+  .stage-label .model-tag {
+    font-size: 10px; color: var(--ink-muted);
+    background: rgba(0,0,0,0.04); padding: 2px 8px;
+    border-radius: 3px; letter-spacing: 0.5px;
+  }
+  .stage-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800; font-size: 32px;
+    letter-spacing: -0.5px; margin-bottom: var(--space-xs);
+  }
+  .stage-desc {
+    font-size: 16px; line-height: 1.65;
+    color: var(--ink-secondary); max-width: 640px;
+    margin-bottom: var(--space-xl);
+  }
+
+  /* ─── VISUAL CONTAINERS ─── */
+  .visual {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    overflow: hidden;
+  }
+  .stage-section.warm .visual { background: #fff; }
+
+  /* ═══ INGEST VISUAL: Feed cascade ═══ */
+  .feed-cascade {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+  }
+  .feed-sources {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .feed-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-secondary);
+  }
+  .feed-lean {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 2px 6px; border-radius: 3px;
+    flex-shrink: 0; min-width: 48px; text-align: center;
+  }
+  .feed-lean.left { color: #2563EB; background: rgba(37,99,235,0.08); }
+  .feed-lean.center { color: var(--ink-muted); background: rgba(0,0,0,0.04); }
+  .feed-lean.right { color: #DC2626; background: rgba(220,38,38,0.08); }
+  .feed-domain { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-count { color: var(--ink-secondary); font-size: 10px; flex-shrink: 0; }
+
+  .feed-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    justify-content: center;
+  }
+  .funnel-result {
+    border: 2px solid var(--accent-blue-deep);
+    border-radius: 8px; padding: 20px;
+    text-align: center;
+  }
+  .funnel-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800; font-size: 32px; color: var(--accent-blue-deep);
+  }
+  .funnel-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+  .feed-output {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    padding: var(--space-md);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--ink-secondary);
+  }
+  .feed-output .key { color: var(--accent-blue-deep); }
+  .feed-output .val { color: var(--ink); }
+
+  /* ═══ EMBED VISUAL: Vector space ═══ */
+  .vector-space {
+    position: relative;
+    height: 280px;
+    background: linear-gradient(135deg, #fafafa 0%, #f5f3ee 100%);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .vector-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    opacity: 0.7;
+  }
+  .vector-dot.politics { background: var(--cat-politics); }
+  .vector-dot.world { background: var(--cat-world); }
+  .vector-dot.economy { background: var(--cat-economy); }
+  .vector-dot.science { background: var(--cat-science); }
+  .vector-label {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-muted);
+    letter-spacing: 0.5px;
+  }
+  .vector-axis-x {
+    position: absolute; bottom: 12px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--border);
+    letter-spacing: 1px;
+  }
+  .vector-axis-y {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--border);
+    letter-spacing: 1px;
+  }
+  .embed-equation {
+    text-align: center;
+    padding: var(--space-md) 0 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-secondary);
+  }
+  .embed-equation strong { color: var(--accent-blue-deep); }
+
+  /* ═══ CLUSTER VISUAL: Dots coalescing ═══ */
+  .cluster-viz {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+  .cluster-before, .cluster-after {
+    position: relative;
+    height: 300px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #f0eeea;
+  }
+  .cluster-before-label, .cluster-after-label {
+    position: absolute; top: 12px; left: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--ink-secondary);
+  }
+  .cluster-arrow {
+    font-size: 28px; color: var(--border);
+  }
+  .cdot {
+    position: absolute;
+    width: 8px; height: 8px; border-radius: 50%; opacity: 0.6;
+  }
+  .cdot.p { background: var(--cat-politics); }
+  .cdot.w { background: var(--cat-world); }
+  .cdot.e { background: var(--cat-economy); }
+  .cdot.s { background: var(--cat-science); }
+  /* Clustered dots: grouped with rings */
+  .cluster-ring {
+    position: absolute;
+    border: 2px dashed;
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .cluster-ring.p { border-color: var(--cat-politics); }
+  .cluster-ring.w { border-color: var(--cat-world); }
+  .cluster-ring.e { border-color: var(--cat-economy); }
+  .cluster-ring.s { border-color: var(--cat-science); }
+  .cluster-topic-label {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .cluster-topic-label.p { color: var(--cat-politics); background: rgba(192,57,43,0.08); }
+  .cluster-topic-label.w { color: var(--cat-world); background: rgba(43,76,126,0.08); }
+  .cluster-topic-label.e { color: var(--cat-economy); background: rgba(200,150,62,0.08); }
+
+  /* ═══ LABEL VISUAL: Headlines merge ═══ */
+  .label-viz {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .label-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .label-headline {
+    padding: 10px 14px;
+    border-left: 3px solid var(--border);
+    font-size: 13px;
+    color: var(--ink-secondary);
+    line-height: 1.4;
+    background: #fafafa;
+    border-radius: 0 6px 6px 0;
+  }
+  .label-headline .src {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-muted);
+    display: block; margin-bottom: 4px;
+  }
+  .label-headline.left { border-left-color: #2563EB; }
+  .label-headline.center { border-left-color: var(--ink-muted); }
+  .label-headline.right { border-left-color: #DC2626; }
+  .label-output {
+    border: 2px solid var(--accent-blue-deep);
+    border-radius: 8px;
+    padding: var(--space-md) var(--space-lg);
+    text-align: center;
+  }
+  .label-output-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--accent-gold);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: var(--space-xs);
+  }
+  .label-output-text {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800; font-size: 22px;
+    line-height: 1.3;
+  }
+
+  /* ═══ SCORE VISUAL: Factor bars ═══ */
+  .score-viz {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+  }
+  .score-factors { display: flex; flex-direction: column; gap: var(--space-md); }
+  .score-factor { display: flex; align-items: center; gap: var(--space-sm); }
+  .score-factor-label {
+    font-size: 13px; font-weight: 600;
+    min-width: 160px; flex-shrink: 0;
+  }
+  .score-bar-track {
+    flex: 1; height: 28px;
+    background: #f0eeea; border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: var(--accent-blue-deep);
+    display: flex; align-items: center;
+    justify-content: flex-end; padding-right: 8px;
+  }
+  .score-bar-fill span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500; color: #fff;
+  }
+  .score-bar-max {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-secondary);
+  }
+  .score-result {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .score-result-num {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900; font-size: 72px;
+    color: var(--accent-blue-deep);
+    line-height: 1;
+  }
+  .score-result-label {
+    font-size: 14px; color: var(--ink-muted);
+    margin-top: var(--space-xs);
+  }
+  .score-result-note {
+    font-size: 12px; color: var(--ink-secondary);
+    margin-top: var(--space-sm);
+    font-style: italic;
+    max-width: 240px;
+  }
+
+  /* ═══ FRAME VISUAL: Same event, different framing ═══ */
+  .frame-viz {
+    display: flex; flex-direction: column; gap: var(--space-md);
+  }
+  .frame-event {
+    text-align: center;
+    padding: var(--space-sm);
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--ink-muted);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .frame-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-sm);
+  }
+  .frame-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .frame-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .frame-card.left::before { background: #2563EB; }
+  .frame-card.center::before { background: var(--ink-muted); }
+  .frame-card.right::before { background: #DC2626; }
+  .frame-card-src {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-secondary);
+    margin-bottom: 6px;
+  }
+  .frame-card-text {
+    font-size: 14px; line-height: 1.5;
+    color: var(--ink-secondary);
+    margin-bottom: var(--space-sm);
+  }
+  .frame-card-text em {
+    font-style: normal;
+    background: rgba(200,150,62,0.15);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+  .frame-card-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 3px 8px; border-radius: 4px;
+    display: inline-block;
+  }
+  .frame-card-tag.alarm { color: #B45309; background: rgba(180,83,9,0.08); }
+  .frame-card-tag.policy { color: var(--accent-blue-deep); background: rgba(27,49,85,0.08); }
+  .frame-card-tag.neutral { color: var(--ink-muted); background: rgba(0,0,0,0.04); }
+  .frame-firewall {
+    text-align: center;
+    padding: var(--space-sm);
+    border: 1px dashed var(--accent-gold);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--accent-gold);
+    font-weight: 600;
+  }
+
+  /* ═══ ANALYZE VISUAL: Everything flows in ═══ */
+  .analyze-viz {
+    display: grid;
+    grid-template-columns: 260px auto 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+  }
+  .analyze-inputs {
+    display: flex; flex-direction: column; gap: var(--space-xs);
+  }
+  .analyze-input {
+    padding: 10px 14px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    font-size: 12px; color: var(--ink-secondary);
+    display: flex; align-items: center; gap: var(--space-sm);
+  }
+  .analyze-input-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-secondary);
+    background: #f0eeea; padding: 2px 6px;
+    border-radius: 3px; flex-shrink: 0;
+  }
+  .analyze-arrow { font-size: 28px; color: var(--border); }
+  .analyze-output {
+    background: var(--accent-blue-deep);
+    color: #fff;
+    border-radius: 10px;
+    padding: var(--space-lg);
+  }
+  .analyze-output-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: rgba(255,255,255,0.5);
+    margin-bottom: var(--space-sm);
+  }
+  .analyze-output-sections {
+    display: flex; flex-direction: column; gap: var(--space-sm);
+  }
+  .analyze-output-section {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.8);
+  }
+  .analyze-output-section .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Footer */
+  footer { text-align: center; padding: var(--space-lg) 48px; border-top: 1px solid var(--border); }
+  footer p { font-size: 13px; color: var(--ink-muted); }
+
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .hero { padding: 48px 20px 40px; }
+    .hero h1 { font-size: 36px; }
+    .hero-pipeline { grid-template-columns: repeat(3, 1fr); }
+    .hero-principles { flex-direction: column; gap: var(--space-sm); }
+    .stage-section { padding: 48px 20px; }
+    .feed-cascade { grid-template-columns: 1fr; }
+    .cluster-viz { grid-template-columns: 1fr; }
+    .cluster-before, .cluster-after { height: 220px; }
+    .label-inputs { grid-template-columns: 1fr; }
+    .score-viz { grid-template-columns: 1fr; }
+    .frame-cards { grid-template-columns: 1fr; }
+    .analyze-viz { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">Clear<span>Signal</span></a>
+  <a href="#" class="nav-back">← Back to stories</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <h1>From raw feeds to<br><em>structured clarity</em></h1>
+    <p class="hero-sub">9 stages turn the noise of 40+ sources into a map of who's saying what — and what's being left out.</p>
+
+    <div class="hero-pipeline">
+      <div class="hp-cell"><div class="hp-num">01</div><div class="hp-name">Ingest</div></div>
+      <div class="hp-cell"><div class="hp-num">02</div><div class="hp-name">Embed</div><div class="hp-model">OpenAI</div></div>
+      <div class="hp-cell"><div class="hp-num">03</div><div class="hp-name">Cluster</div><div class="hp-model">HDBSCAN</div></div>
+      <div class="hp-cell"><div class="hp-num">04</div><div class="hp-name">Label</div><div class="hp-model">Haiku</div></div>
+      <div class="hp-cell"><div class="hp-num">05</div><div class="hp-name">Validate</div><div class="hp-model">GPT-4o</div></div>
+      <div class="hp-cell"><div class="hp-num">06</div><div class="hp-name">Score</div><div class="hp-model">Haiku</div></div>
+      <div class="hp-cell"><div class="hp-num">07</div><div class="hp-name">Select</div><div class="hp-model">GPT-4o</div></div>
+      <div class="hp-cell"><div class="hp-num">08</div><div class="hp-name">Frame</div><div class="hp-model">Haiku</div></div>
+      <div class="hp-cell final"><div class="hp-num">09</div><div class="hp-name">Analyze</div><div class="hp-model">Sonnet</div></div>
+    </div>
+
+    <div class="hero-principles">
+      <div class="hero-principle">
+        <div class="hero-principle-title">Source-Blind Framing</div>
+        <div class="hero-principle-desc">Framing classified from language, not source identity. The AI never sees outlet names.</div>
+      </div>
+      <div class="hero-principle">
+        <div class="hero-principle-title">Coverage Gap Detection</div>
+        <div class="hero-principle-desc">Impact vs coverage delta reveals what the media is overlooking.</div>
+      </div>
+      <div class="hero-principle">
+        <div class="hero-principle-title">Multi-Model Architecture</div>
+        <div class="hero-principle-desc">Fast models triage. The best model analyzes. Cost, speed, depth — balanced.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 1: INGEST                        -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 01</div>
+    <div class="stage-title">Ingest</div>
+    <div class="stage-desc">Concurrent RSS fetcher pulls from 40+ feeds across the political spectrum every 15 minutes. URLs are normalized, deduplicated, and stored with source metadata including editorial lean ratings.</div>
+
+    <div class="visual">
+      <div class="feed-cascade">
+        <div class="feed-sources">
+          <div class="feed-row"><span class="feed-lean left">Left</span><span class="feed-domain">nytimes.com/rss</span><span class="feed-count">12 articles</span></div>
+          <div class="feed-row"><span class="feed-lean left">Left</span><span class="feed-domain">washingtonpost.com/rss</span><span class="feed-count">9 articles</span></div>
+          <div class="feed-row"><span class="feed-lean center">Center</span><span class="feed-domain">apnews.com/feed</span><span class="feed-count">18 articles</span></div>
+          <div class="feed-row"><span class="feed-lean center">Center</span><span class="feed-domain">reuters.com/rss</span><span class="feed-count">15 articles</span></div>
+          <div class="feed-row"><span class="feed-lean right">Right</span><span class="feed-domain">foxnews.com/rss</span><span class="feed-count">11 articles</span></div>
+          <div class="feed-row"><span class="feed-lean right">Right</span><span class="feed-domain">dailywire.com/rss</span><span class="feed-count">8 articles</span></div>
+          <div class="feed-row" style="opacity:0.4; border-style:dashed;"><span class="feed-lean center">...</span><span class="feed-domain">34 more feeds</span><span class="feed-count"></span></div>
+        </div>
+        <div class="feed-right-col">
+          <div class="funnel-result">
+            <div class="funnel-num">477</div>
+            <div class="funnel-label">articles this cycle</div>
+          </div>
+          <div class="feed-output">
+            <span class="key">title:</span> <span class="val">"Trump Freezes Foreign Aid..."</span><br>
+            <span class="key">source:</span> <span class="val">"reuters.com"</span><br>
+            <span class="key">published:</span> <span class="val">"2025-02-09T14:23:00Z"</span><br>
+            <span class="key">lean:</span> <span class="val">"center"</span><br>
+            <span class="key">url:</span> <span class="val">"reuters.com/world/us/..."</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 2: EMBED + CLUSTER               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section warm">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 02 and 03 <span class="model-tag">OpenAI embeddings</span></div>
+    <div class="stage-title">Embed and Cluster</div>
+    <div class="stage-desc">Each article headline is embedded into a 384-dimensional vector. HDBSCAN density-based clustering discovers story groups by cosine similarity. Scattered articles find each other in semantic space.</div>
+
+    <div class="visual">
+      <div class="cluster-viz">
+        <!-- Before: scattered dots -->
+        <div class="cluster-before">
+          <div class="cluster-before-label">477 scattered articles</div>
+          <div class="cdot p" style="top:25%;left:18%"></div>
+          <div class="cdot w" style="top:42%;left:12%"></div>
+          <div class="cdot p" style="top:33%;left:25%"></div>
+          <div class="cdot e" style="top:68%;left:45%"></div>
+          <div class="cdot w" style="top:55%;left:52%"></div>
+          <div class="cdot s" style="top:22%;left:72%"></div>
+          <div class="cdot p" style="top:78%;left:20%"></div>
+          <div class="cdot e" style="top:45%;left:78%"></div>
+          <div class="cdot w" style="top:62%;left:32%"></div>
+          <div class="cdot s" style="top:38%;left:58%"></div>
+          <div class="cdot p" style="top:82%;left:65%"></div>
+          <div class="cdot e" style="top:18%;left:42%"></div>
+          <div class="cdot w" style="top:72%;left:82%"></div>
+          <div class="cdot s" style="top:52%;left:22%"></div>
+          <div class="cdot p" style="top:15%;left:55%"></div>
+          <div class="cdot e" style="top:85%;left:38%"></div>
+          <div class="cdot w" style="top:28%;left:88%"></div>
+          <div class="cdot s" style="top:65%;left:68%"></div>
+        </div>
+
+        <div class="cluster-arrow">→</div>
+
+        <!-- After: clustered dots with rings -->
+        <div class="cluster-after">
+          <div class="cluster-after-label">46 story clusters</div>
+          <!-- Cluster 1: Politics -->
+          <div class="cluster-ring p" style="top:15%;left:10%;width:100px;height:80px;"></div>
+          <div class="cdot p" style="top:28%;left:18%;opacity:0.9"></div>
+          <div class="cdot p" style="top:22%;left:26%;opacity:0.9"></div>
+          <div class="cdot p" style="top:32%;left:22%;opacity:0.9"></div>
+          <div class="cdot p" style="top:26%;left:14%;opacity:0.9"></div>
+          <div class="cluster-topic-label p" style="top:48%;left:10%">FBI Director Vote</div>
+          <!-- Cluster 2: World -->
+          <div class="cluster-ring w" style="top:10%;left:55%;width:110px;height:85px;"></div>
+          <div class="cdot w" style="top:22%;left:62%;opacity:0.9"></div>
+          <div class="cdot w" style="top:18%;left:72%;opacity:0.9"></div>
+          <div class="cdot w" style="top:28%;left:68%;opacity:0.9"></div>
+          <div class="cdot w" style="top:24%;left:58%;opacity:0.9"></div>
+          <div class="cdot w" style="top:16%;left:66%;opacity:0.9"></div>
+          <div class="cluster-topic-label w" style="top:44%;left:55%">Foreign Aid Freeze</div>
+          <!-- Cluster 3: Economy -->
+          <div class="cluster-ring e" style="top:58%;left:30%;width:90px;height:75px;"></div>
+          <div class="cdot e" style="top:68%;left:38%;opacity:0.9"></div>
+          <div class="cdot e" style="top:72%;left:45%;opacity:0.9"></div>
+          <div class="cdot e" style="top:65%;left:42%;opacity:0.9"></div>
+          <div class="cluster-topic-label e" style="top:84%;left:30%">Fed Rate Pause</div>
+        </div>
+      </div>
+      <div class="embed-equation">
+        <strong>"Trump freezes aid"</strong> → [0.023, -0.187, 0.441, ... ] → cosine similarity → cluster assignment
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 3: LABEL                         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 04 <span class="model-tag">Claude Haiku</span></div>
+    <div class="stage-title">Label</div>
+    <div class="stage-desc">Different outlets write different headlines for the same event. Claude Haiku reads them all and generates one neutral, wire-service-style topic label. No editorializing — just the facts.</div>
+
+    <div class="visual">
+      <div class="label-viz">
+        <div class="label-inputs">
+          <div class="label-headline left"><span class="src">NYT</span>"Trump's Aid Freeze Threatens Millions Abroad, Critics Warn"</div>
+          <div class="label-headline left"><span class="src">MSNBC</span>"Devastating Foreign Aid Cuts Leave Allies Scrambling"</div>
+          <div class="label-headline center"><span class="src">AP</span>"US Halts Foreign Aid Disbursements Pending Review"</div>
+          <div class="label-headline center"><span class="src">Reuters</span>"Trump Administration Pauses Foreign Assistance Programs"</div>
+          <div class="label-headline right"><span class="src">Fox News</span>"Trump Puts America First, Freezes Wasteful Foreign Aid"</div>
+          <div class="label-headline right"><span class="src">Daily Wire</span>"Trump Delivers on Promise to Review Bloated Aid Programs"</div>
+        </div>
+        <div class="label-output">
+          <div class="label-output-tag">Neutral Topic Label</div>
+          <div class="label-output-text">Trump Administration Freezes Foreign Aid Pending Policy Review</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 5: SCORE                         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section warm">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 05 <span class="model-tag">Claude Haiku</span></div>
+    <div class="stage-title">Score</div>
+    <div class="stage-desc">Every topic receives an impact score from a 5-factor model that measures real-world significance — not clickbait potential, not engagement, not controversy. A separate coverage score is computed from signal data alone.</div>
+
+    <div class="visual">
+      <div class="score-viz">
+        <div class="score-factors">
+          <div class="score-factor">
+            <span class="score-factor-label">Policy Scope</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:85%"><span>17/20</span></div></div>
+          </div>
+          <div class="score-factor">
+            <span class="score-factor-label">Population Affected</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:90%"><span>27/30</span></div></div>
+          </div>
+          <div class="score-factor">
+            <span class="score-factor-label">Economic Magnitude</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:80%"><span>20/25</span></div></div>
+          </div>
+          <div class="score-factor">
+            <span class="score-factor-label">Institutional Precedent</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:73%"><span>11/15</span></div></div>
+          </div>
+          <div class="score-factor">
+            <span class="score-factor-label">Irreversibility</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:50%"><span>5/10</span></div></div>
+          </div>
+        </div>
+        <div class="score-result">
+          <div class="score-result-num">80</div>
+          <div class="score-result-label">Impact Score</div>
+          <div class="score-result-note">"We do not score based on how interesting or clickable the story is"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 8: FRAME                         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 08 <span class="model-tag">Claude Haiku</span></div>
+    <div class="stage-title">Frame</div>
+    <div class="stage-desc">Each article's editorial framing is classified into one of 7 categories from its language alone. The model never sees source names, political lean labels, or any metadata about who published the article.</div>
+
+    <div class="visual">
+      <div class="frame-viz">
+        <div class="frame-firewall">Source identity is hidden from the AI. Framing is classified from text alone.</div>
+        <div class="frame-event">Same event: Foreign Aid Freeze</div>
+        <div class="frame-cards">
+          <div class="frame-card left">
+            <div class="frame-card-src">Source A (identity hidden)</div>
+            <div class="frame-card-text">"The freeze <em>threatens millions</em> of vulnerable people who depend on U.S. assistance programs, aid workers say"</div>
+            <span class="frame-card-tag alarm">Alarmist</span>
+          </div>
+          <div class="frame-card center">
+            <div class="frame-card-src">Source B (identity hidden)</div>
+            <div class="frame-card-text">"The administration <em>announced a review</em> of all foreign assistance programs, pausing disbursements"</div>
+            <span class="frame-card-tag neutral">Factual / Wire</span>
+          </div>
+          <div class="frame-card right">
+            <div class="frame-card-src">Source C (identity hidden)</div>
+            <div class="frame-card-text">"The president <em>delivered on his promise</em> to ensure taxpayer dollars serve American interests first"</div>
+            <span class="frame-card-tag policy">Policy / Regulatory</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STAGE 9: ANALYZE                       -->
+<!-- ═══════════════════════════════════════ -->
+<div class="stage-section warm">
+  <div class="stage-inner">
+    <div class="stage-label">Stage 09 <span class="model-tag">Claude Sonnet</span></div>
+    <div class="stage-title">Analyze</div>
+    <div class="stage-desc">The most capable model synthesizes everything — headlines, article bodies, framing classifications, impact scores — into a structured analysis that reads like a senior editor's briefing. Not a summary. A map of how the story is being told differently.</div>
+
+    <div class="visual">
+      <div class="analyze-viz">
+        <div class="analyze-inputs">
+          <div class="analyze-input"><span class="analyze-input-icon">HDLN</span>38 headlines from 22 sources</div>
+          <div class="analyze-input"><span class="analyze-input-icon">BODY</span>Full text from 8 selected articles</div>
+          <div class="analyze-input"><span class="analyze-input-icon">FRAME</span>7 framing classifications per article</div>
+          <div class="analyze-input"><span class="analyze-input-icon">SCORE</span>Impact: 80 / Coverage: 72</div>
+          <div class="analyze-input"><span class="analyze-input-icon">LEAN</span>3 left, 2 center, 3 right sources</div>
+        </div>
+        <div class="analyze-arrow">→</div>
+        <div class="analyze-output">
+          <div class="analyze-output-tag">Structured Analysis Output</div>
+          <div class="analyze-output-sections">
+            <div class="analyze-output-section">
+              <span class="section-label">Lede</span>
+              The Trump administration has frozen foreign aid disbursements across multiple agencies pending a comprehensive policy review...
+            </div>
+            <div class="analyze-output-section">
+              <span class="section-label">Narrative</span>
+              Left-leaning outlets frame the freeze as a humanitarian crisis, while conservative sources cast it as fiscal responsibility...
+            </div>
+            <div class="analyze-output-section">
+              <span class="section-label">Source Spectrum</span>
+              NYT and WaPo emphasize impact on recipients. AP and Reuters report procedural details. Fox and Daily Wire highlight cost savings...
+            </div>
+            <div class="analyze-output-section">
+              <span class="section-label">Bottom Line</span>
+              The freeze is real, the scope is disputed, and the framing reveals more about each outlet than about the policy itself.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2025 ClearSignal — Tracking media coverage across the political spectrum.</p>
+</footer>
+
+</body>
+</html>

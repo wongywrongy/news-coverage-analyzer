@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClearSignal — Methodology</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --bg-alt: #F3F2ED;
+    --ink: #1A1A1A;
+    --ink-light: #3D3D3D;
+    --ink-muted: #8A8A82;
+    --accent-gold: #C8963E;
+    --accent-gold-dim: rgba(200,150,62,0.12);
+    --accent-blue-deep: #1B3155;
+    --accent-blue-darker: #11213A;
+    --border: #D8D5CC;
+    --border-light: rgba(255,255,255,0.12);
+    --white-80: rgba(255,255,255,0.8);
+    --white-60: rgba(255,255,255,0.6);
+    --white-50: rgba(255,255,255,0.5);
+    --white-40: rgba(255,255,255,0.4);
+    --white-20: rgba(255,255,255,0.2);
+    --white-06: rgba(255,255,255,0.06);
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --max-width: 1080px;
+    --nav-height: 58px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ═══ NAV ═══════════════════════════════════════════ */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    height: var(--nav-height);
+    background: rgba(250,250,247,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 48px;
+  }
+  .nav-inner {
+    max-width: var(--max-width); width: 100%; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    font-family: var(--font-display); font-weight: 800; font-size: 20px;
+    color: var(--ink); text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    font-size: 14px; font-weight: 500; color: var(--ink-muted);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a.active { color: var(--ink); font-weight: 600; }
+
+  /* ═══ HERO ══════════════════════════════════════════ */
+  .hero {
+    background: linear-gradient(170deg, var(--accent-blue-deep) 0%, var(--accent-blue-darker) 60%, #0D1825 100%);
+    padding: 96px 48px 80px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; right: -15%;
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(200,150,62,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: ''; position: absolute; bottom: -30%; left: -10%;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(27,49,85,0.4) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    max-width: var(--max-width); margin: 0 auto; position: relative;
+  }
+  .hero h1 {
+    font-family: var(--font-display); font-size: 52px; font-weight: 800;
+    color: #fff; line-height: 1.1; margin-bottom: 20px; letter-spacing: -0.5px;
+  }
+  .hero-sub {
+    font-size: 17px; line-height: 1.7; color: var(--white-60);
+    max-width: 620px; margin-bottom: 56px;
+  }
+
+  /* Pipeline strip */
+  .pipeline-strip {
+    display: flex; align-items: center; margin-bottom: 40px;
+  }
+  .pipeline-block {
+    flex: 1; border: 1px solid var(--border-light); background: var(--white-06);
+    border-radius: 8px; padding: 22px 20px; text-align: center;
+    transition: all 0.3s;
+  }
+  .pipeline-block:hover {
+    border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.09);
+    transform: translateY(-2px);
+  }
+  .pipeline-block.final {
+    border-color: rgba(200,150,62,0.35); background: rgba(200,150,62,0.06);
+  }
+  .pipeline-block.final:hover { border-color: rgba(200,150,62,0.5); }
+  .pipeline-name {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase; color: #fff; margin-bottom: 6px;
+  }
+  .pipeline-block.final .pipeline-name { color: var(--accent-gold); }
+  .pipeline-stages { font-size: 12px; color: var(--white-40); }
+  .pipeline-arrow {
+    color: var(--accent-gold); font-size: 18px; padding: 0 14px;
+    flex-shrink: 0; opacity: 0.7;
+  }
+  .principles-row {
+    display: flex; justify-content: center; gap: 8px;
+    font-size: 13px; color: var(--white-40); letter-spacing: 0.3px;
+  }
+  .principles-row .sep { opacity: 0.4; }
+
+  /* ═══ SECTIONS ══════════════════════════════════════ */
+  .section { padding: 88px 48px; }
+  .section.alt { background: var(--bg-alt); }
+  .section-inner { max-width: var(--max-width); margin: 0 auto; }
+  .section-label {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent-gold); margin-bottom: 8px; display: block;
+  }
+  .section-header { position: relative; margin-bottom: 12px; }
+  .section-number {
+    font-family: var(--font-display); font-size: 72px; font-weight: 800;
+    color: var(--ink); opacity: 0.06; line-height: 1;
+    position: absolute; top: -8px; left: -4px;
+    user-select: none; pointer-events: none;
+  }
+  .section-title {
+    font-family: var(--font-display); font-size: 32px; font-weight: 700;
+    color: var(--ink); position: relative;
+  }
+  .section-desc {
+    font-size: 16px; line-height: 1.75; color: var(--ink-light);
+    max-width: 780px; margin-bottom: 48px;
+  }
+
+  /* ═══ STAGE CONVEYOR (the big visual upgrade) ══════ */
+  .conveyor {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: 0 20px;
+    margin-bottom: 56px;
+  }
+  /* Gradient rail */
+  .conveyor::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 48px;
+    right: 48px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue-deep), var(--accent-gold));
+    border-radius: 2px;
+    opacity: 0.3;
+  }
+
+  .conveyor-node {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* The numbered circle */
+  .node-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.3s;
+    cursor: default;
+  }
+  /* Outer ring + inner fill */
+  .node-circle::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    transition: all 0.3s;
+  }
+  .node-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--accent-blue-deep);
+    transition: all 0.3s;
+    position: relative;
+    z-index: 1;
+  }
+  .alt .node-fill { background: var(--bg-alt); }
+
+  .conveyor-node:hover .node-circle::before {
+    border-color: var(--accent-gold);
+    inset: -6px;
+  }
+  .conveyor-node:hover .node-fill {
+    background: var(--accent-blue-deep);
+    color: #fff;
+  }
+
+  /* Special: "active" nodes for key stages */
+  .conveyor-node.key .node-fill {
+    background: var(--accent-blue-deep);
+    color: #fff;
+  }
+  .conveyor-node.key .node-circle::before {
+    border-color: var(--accent-blue-deep);
+    opacity: 0.3;
+  }
+  .conveyor-node.key:hover .node-fill {
+    background: var(--accent-gold);
+    color: #fff;
+  }
+  .conveyor-node.key:hover .node-circle::before {
+    border-color: var(--accent-gold);
+    opacity: 0.5;
+  }
+
+  .node-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+  }
+  .node-detail {
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-align: center;
+    line-height: 1.4;
+    max-width: 100px;
+  }
+
+  /* Two-row conveyor */
+  .conveyor-group { margin-bottom: 56px; }
+  .conveyor-group .conveyor { margin-bottom: 32px; }
+  .conveyor-group .conveyor:last-child { margin-bottom: 0; }
+
+  /* Connector between rows */
+  .conveyor-row-bridge {
+    display: flex;
+    align-items: center;
+    padding-left: 60px;
+    margin-bottom: 8px;
+    margin-top: -16px;
+  }
+  .conveyor-row-bridge svg {
+    width: 24px;
+    height: 24px;
+    color: var(--accent-gold);
+    opacity: 0.3;
+  }
+
+  /* ═══ CALLOUT BOXES ═════════════════════════════════ */
+  .callout {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 32px 36px; background: var(--bg);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+  .alt .callout { background: #fff; }
+  .callout-item {}
+  .callout-label {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .callout-text {
+    font-size: 14px; line-height: 1.7; color: var(--ink-light);
+  }
+  .callout.single-col {
+    grid-template-columns: 1fr;
+  }
+
+  /* ═══ SCORING ORBITAL ═══════════════════════════════ */
+  .scoring-visual {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 56px;
+    aspect-ratio: 1.4 / 1;
+  }
+
+  /* Center hub */
+  .scoring-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: var(--accent-blue-deep);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    box-shadow: 0 0 0 8px rgba(27,49,85,0.08), 0 0 0 20px rgba(27,49,85,0.03);
+  }
+  .scoring-hub-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent-gold);
+    margin-bottom: 4px;
+  }
+  .scoring-hub-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* Orbit rings */
+  .orbit-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    opacity: 0.5;
+  }
+  .orbit-ring.inner {
+    width: 320px; height: 320px;
+    transform: translate(-50%, -50%);
+  }
+  .orbit-ring.outer {
+    width: 520px; height: 520px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Score nodes */
+  .score-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: default;
+    transition: transform 0.25s;
+  }
+  .score-node:hover {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+
+  .score-pip {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .score-node:hover .score-pip {
+    border-color: var(--accent-gold);
+    box-shadow: 0 2px 12px rgba(200,150,62,0.2);
+  }
+  .score-pip.ai-pip {
+    border-color: var(--accent-blue-deep);
+    background: var(--accent-blue-deep);
+  }
+  .score-node:hover .score-pip.ai-pip {
+    border-color: var(--accent-gold);
+    background: var(--accent-gold);
+  }
+  .score-pip-icon {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    letter-spacing: -0.3px;
+  }
+  .score-pip.ai-pip .score-pip-icon {
+    color: #fff;
+  }
+
+  .score-node-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .score-node-sub {
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-align: center;
+    max-width: 90px;
+    line-height: 1.3;
+    margin-top: 2px;
+  }
+
+  /* Connection lines from hub to nodes */
+  .score-line {
+    position: absolute;
+    top: 50%; left: 50%;
+    z-index: 1;
+    transform-origin: 0 0;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.3;
+  }
+
+  /* ═══ ANALYSIS DOCUMENT PREVIEW ═════════════════════ */
+  .doc-preview-wrapper {
+    perspective: 1200px;
+    margin-bottom: 48px;
+  }
+  .doc-preview {
+    background: var(--accent-blue-deep);
+    border-radius: 12px;
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 48px;
+    transform: rotateX(1deg);
+    box-shadow: 0 20px 60px rgba(17,33,58,0.3), 0 8px 20px rgba(0,0,0,0.1);
+  }
+  .doc-preview::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-gold), rgba(200,150,62,0.2));
+  }
+  .doc-preview::after {
+    content: '';
+    position: absolute;
+    top: -40%; right: -10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(200,150,62,0.06), transparent 60%);
+    pointer-events: none;
+  }
+
+  .doc-main { position: relative; z-index: 1; }
+  .doc-badge {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent-gold); margin-bottom: 20px; display: block;
+  }
+
+  /* Simulated document lines */
+  .doc-line {
+    margin-bottom: 16px;
+  }
+  .doc-line-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-gold);
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+  .doc-line-bar {
+    height: 10px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-line-bar-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.15);
+  }
+  .doc-line-text {
+    font-size: 13px;
+    color: var(--white-50);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  /* The sidebar showing output fields */
+  .doc-sidebar {
+    position: relative;
+    z-index: 1;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    padding-left: 32px;
+  }
+  .doc-field {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .doc-field:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .doc-field-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-gold);
+    margin-bottom: 4px;
+  }
+  .doc-field-desc {
+    font-size: 12px;
+    color: var(--white-50);
+    line-height: 1.5;
+  }
+
+  .doc-footer {
+    grid-column: 1 / -1;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    gap: 40px;
+    font-size: 12px;
+    color: var(--white-40);
+    position: relative;
+    z-index: 1;
+  }
+  .doc-footer strong { color: var(--white-60); font-weight: 500; }
+
+  /* Framing pills */
+  .framing-pills {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+  }
+  .framing-pill {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.3px;
+    padding: 5px 12px; border-radius: 100px;
+    border: 1px solid var(--border); color: var(--ink-muted); background: var(--bg);
+  }
+
+  /* ═══ DARK SECTION ══════════════════════════════════ */
+  .section-dark {
+    background: linear-gradient(175deg, var(--accent-blue-deep), var(--accent-blue-darker));
+    padding: 88px 48px;
+  }
+  .section-dark .section-inner { max-width: var(--max-width); margin: 0 auto; }
+  .section-dark h2 {
+    font-family: var(--font-display); font-size: 32px; font-weight: 700;
+    color: #fff; margin-bottom: 16px;
+  }
+  .section-dark .lead {
+    font-size: 16px; line-height: 1.75; color: var(--white-60);
+    max-width: 700px; margin-bottom: 56px;
+  }
+
+  /* Model tiers visual */
+  .model-tiers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .model-tier {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 32px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .model-tier:hover {
+    border-color: rgba(255,255,255,0.2);
+  }
+  .model-tier::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .model-tier.tier-fast::before { background: rgba(255,255,255,0.2); }
+  .model-tier.tier-reason::before { background: rgba(255,255,255,0.4); }
+  .model-tier.tier-gen::before { background: var(--accent-gold); }
+
+  .tier-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--white-40);
+    margin-bottom: 16px;
+  }
+  .tier-gen .tier-label { color: var(--accent-gold); }
+
+  .tier-model-list { list-style: none; }
+  .tier-model-item {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .tier-model-item:last-child { border-bottom: none; }
+  .tier-model-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-gold);
+    margin-bottom: 2px;
+  }
+  .tier-model-task {
+    font-size: 13px;
+    color: var(--white-50);
+    margin-bottom: 2px;
+  }
+  .tier-model-why {
+    font-size: 11px;
+    color: var(--white-40);
+  }
+
+  /* ═══ PRINCIPLES ════════════════════════════════════ */
+  .principles-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;
+  }
+  .principle { padding-right: 20px; }
+  .principle-number {
+    font-family: var(--font-display); font-size: 28px; font-weight: 800;
+    color: var(--accent-gold); opacity: 0.5; line-height: 1; margin-bottom: 12px;
+  }
+  .principle-title {
+    font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 12px;
+  }
+  .principle-desc {
+    font-size: 14px; line-height: 1.7; color: var(--ink-light);
+  }
+
+  /* ═══ FOOTER ════════════════════════════════════════ */
+  .footer-cta {
+    text-align: center; padding: 56px 48px 80px; background: var(--bg);
+  }
+  .footer-cta a {
+    font-size: 16px; font-weight: 600; color: var(--accent-blue-deep);
+    text-decoration: none; padding: 14px 36px;
+    border: 2px solid var(--accent-blue-deep); border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .footer-cta a:hover { background: var(--accent-blue-deep); color: #fff; }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px; text-align: center; font-size: 13px; color: var(--ink-muted);
+  }
+
+  /* ═══ RESPONSIVE ════════════════════════════════════ */
+  @media (max-width: 860px) {
+    .hero { padding: 64px 24px 56px; }
+    .hero h1 { font-size: 36px; }
+    .pipeline-strip { flex-direction: column; }
+    .pipeline-arrow { transform: rotate(90deg); padding: 8px 0; }
+    .section, .section-dark { padding: 56px 24px; }
+    .scoring-visual { display: none; }
+    /* Fallback grid for mobile scoring */
+    .scoring-fallback { display: grid !important; }
+    .conveyor { flex-wrap: wrap; gap: 24px; justify-content: center; }
+    .conveyor::before { display: none; }
+    .conveyor-node { flex: 0 0 calc(33% - 16px); }
+    .callout { grid-template-columns: 1fr; }
+    .doc-preview { grid-template-columns: 1fr; padding: 28px; }
+    .doc-sidebar { border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; }
+    .model-tiers { grid-template-columns: 1fr; }
+    .principles-grid { grid-template-columns: 1fr; gap: 32px; }
+    nav { padding: 0 24px; }
+    .nav-links { gap: 20px; }
+  }
+  .scoring-fallback { display: none; }
+
+  /* ═══ ANIMATIONS ════════════════════════════════════ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .hero h1, .hero-sub, .pipeline-strip, .principles-row {
+    animation: fadeUp 0.6s ease-out both;
+  }
+  .hero-sub { animation-delay: 0.1s; }
+  .pipeline-strip { animation-delay: 0.2s; }
+  .principles-row { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">ClearSignal</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/news">News</a>
+      <a href="/archive">Archive</a>
+      <a href="/methodology" class="active">Methodology</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <h1>From raw feeds to<br>structured clarity</h1>
+    <p class="hero-sub">
+      Four interconnected pipelines. Six specialized AI models. Twenty-seven stages of processing. Zero editorial bias. Here's how ClearSignal turns the noise of modern media into signal.
+    </p>
+    <div class="pipeline-strip">
+      <div class="pipeline-block">
+        <div class="pipeline-name">Ingest</div>
+        <div class="pipeline-stages">5 stages</div>
+      </div>
+      <div class="pipeline-arrow">&#9656;</div>
+      <div class="pipeline-block">
+        <div class="pipeline-name">Cluster</div>
+        <div class="pipeline-stages">9 stages</div>
+      </div>
+      <div class="pipeline-arrow">&#9656;</div>
+      <div class="pipeline-block">
+        <div class="pipeline-name">Score</div>
+        <div class="pipeline-stages">9 stages</div>
+      </div>
+      <div class="pipeline-arrow">&#9656;</div>
+      <div class="pipeline-block final">
+        <div class="pipeline-name">Analyze</div>
+        <div class="pipeline-stages">4 stages</div>
+      </div>
+    </div>
+    <div class="principles-row">
+      Source-Blind Framing <span class="sep">&middot;</span>
+      Coverage Gap Detection <span class="sep">&middot;</span>
+      Multi-Model Architecture
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE 01: INGEST -->
+<section class="section">
+  <div class="section-inner">
+    <span class="section-label">Pipeline 01</span>
+    <div class="section-header"><div class="section-number">01</div><h2 class="section-title">Ingest</h2></div>
+    <p class="section-desc">
+      Every cycle, ClearSignal pulls from over a hundred sources spanning the full political spectrum, from Fox News to NPR, Wall Street Journal to The Guardian, Reuters to Daily Wire. Articles are normalized, deduplicated against both URL and semantic similarity, transformed into high-dimensional vector embeddings, and stored for downstream analysis. Nothing gets through twice. Nothing gets missed.
+    </p>
+
+    <div class="conveyor">
+      <div class="conveyor-node key">
+        <div class="node-circle"><div class="node-fill">1</div></div>
+        <div class="node-label">Fetch</div>
+        <div class="node-detail">RSS feeds and news APIs</div>
+      </div>
+      <div class="conveyor-node">
+        <div class="node-circle"><div class="node-fill">2</div></div>
+        <div class="node-label">Normalize</div>
+        <div class="node-detail">URL resolution and cleanup</div>
+      </div>
+      <div class="conveyor-node">
+        <div class="node-circle"><div class="node-fill">3</div></div>
+        <div class="node-label">Dedup</div>
+        <div class="node-detail">URL and semantic similarity</div>
+      </div>
+      <div class="conveyor-node key">
+        <div class="node-circle"><div class="node-fill">4</div></div>
+        <div class="node-label">Embed</div>
+        <div class="node-detail">384-dimension vectors</div>
+      </div>
+      <div class="conveyor-node">
+        <div class="node-circle"><div class="node-fill">5</div></div>
+        <div class="node-label">Store</div>
+        <div class="node-detail">Supabase pgvector</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-item">
+        <div class="callout-label">Source Spectrum Tagging</div>
+        <div class="callout-text">Every feed is tagged with its editorial lean using AllSides and Ad Fontes Media ratings: left, left-center, center, right-center, right, and wire service. This is not cosmetic. It powers coverage gap detection downstream. When ClearSignal says a story is "undercovered on the right," that is a measured claim backed by tagged source data.</div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-label">Semantic Deduplication</div>
+        <div class="callout-text">URL matching catches the obvious duplicates. But when a wire service publishes a story and dozens of outlets run slightly rewritten versions, URL matching fails. ClearSignal uses cosine similarity on title embeddings to catch syndicated rewrites, ensuring each story is counted once regardless of how many outlets picked it up.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE 02: CLUSTER -->
+<section class="section alt">
+  <div class="section-inner">
+    <span class="section-label">Pipeline 02</span>
+    <div class="section-header"><div class="section-number">02</div><h2 class="section-title">Cluster</h2></div>
+    <p class="section-desc">
+      Raw articles become stories. ClearSignal groups semantically related articles using density-based clustering on their vector embeddings, with no predefined topic count and no forced grouping. Each cluster receives an AI-generated neutral headline, named entities are extracted, and a knowledge graph connects people, organizations, and legislation across stories.
+    </p>
+
+    <div class="conveyor-group">
+      <div class="conveyor">
+        <div class="conveyor-node key">
+          <div class="node-circle"><div class="node-fill">1</div></div>
+          <div class="node-label">Assign</div>
+          <div class="node-detail">Fast-path matching</div>
+        </div>
+        <div class="conveyor-node key">
+          <div class="node-circle"><div class="node-fill">2</div></div>
+          <div class="node-label">Discover</div>
+          <div class="node-detail">HDBSCAN clustering</div>
+        </div>
+        <div class="conveyor-node">
+          <div class="node-circle"><div class="node-fill">3</div></div>
+          <div class="node-label">Split</div>
+          <div class="node-detail">Oversized clusters</div>
+        </div>
+        <div class="conveyor-node key">
+          <div class="node-circle"><div class="node-fill">4</div></div>
+          <div class="node-label">Label</div>
+          <div class="node-detail">AI topic naming</div>
+        </div>
+        <div class="conveyor-node">
+          <div class="node-circle"><div class="node-fill">5</div></div>
+          <div class="node-label">Rename</div>
+          <div class="node-detail">Headline polish</div>
+        </div>
+      </div>
+      <div class="conveyor">
+        <div class="conveyor-node key">
+          <div class="node-circle"><div class="node-fill">6</div></div>
+          <div class="node-label">Entities</div>
+          <div class="node-detail">NER extraction</div>
+        </div>
+        <div class="conveyor-node key">
+          <div class="node-circle"><div class="node-fill">7</div></div>
+          <div class="node-label">Graph</div>
+          <div class="node-detail">PageRank scoring</div>
+        </div>
+        <div class="conveyor-node">
+          <div class="node-circle"><div class="node-fill">8</div></div>
+          <div class="node-label">Merge</div>
+          <div class="node-detail">Converged stories</div>
+        </div>
+        <div class="conveyor-node">
+          <div class="node-circle"><div class="node-fill">9</div></div>
+          <div class="node-label">Validate</div>
+          <div class="node-detail">Currency and relevance</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-item">
+        <div class="callout-label">Why HDBSCAN</div>
+        <div class="callout-text">Most clustering algorithms require a predefined number of clusters. That is impossible with news. HDBSCAN finds natural density boundaries in the embedding space and handles noise gracefully. Articles that do not belong to any story become outliers, not forced matches.</div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-label">Entity Knowledge Graph</div>
+        <div class="callout-text">People, organizations, legislation, and court cases are extracted from every topic and connected by co-occurrence. PageRank-style importance scoring means a senator appearing across 12 stories alongside the Supreme Court carries more weight than a name appearing in 10 unrelated local stories.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE 03: SCORE -->
+<section class="section">
+  <div class="section-inner">
+    <span class="section-label">Pipeline 03</span>
+    <div class="section-header"><div class="section-number">03</div><h2 class="section-title">Score</h2></div>
+    <p class="section-desc">
+      Every story is measured across nine dimensions. Not just "is this important?" but how much attention is it getting, who is covering it, what is the emotional temperature across the spectrum, and crucially: what are people missing? These scores drive the homepage ranking, trending indicators, and coverage gap alerts.
+    </p>
+
+    <!-- Orbital scoring visual (desktop) -->
+    <div class="scoring-visual">
+      <!-- Orbit rings -->
+      <div class="orbit-ring inner"></div>
+      <div class="orbit-ring outer"></div>
+
+      <!-- Center -->
+      <div class="scoring-hub">
+        <div class="scoring-hub-label">Each Story</div>
+        <div class="scoring-hub-title">9 Scores</div>
+      </div>
+
+      <!-- Inner orbit: the core trio -->
+      <div class="score-node" style="top: 18%; left: 50%;">
+        <div class="score-pip ai-pip"><span class="score-pip-icon">AI</span></div>
+        <div class="score-node-name">Impact</div>
+        <div class="score-node-sub">Real-world significance</div>
+      </div>
+      <div class="score-node" style="top: 68%; left: 22%;">
+        <div class="score-pip"><span class="score-pip-icon">C</span></div>
+        <div class="score-node-name">Coverage</div>
+        <div class="score-node-sub">Source breadth and diversity</div>
+      </div>
+      <div class="score-node" style="top: 68%; left: 78%;">
+        <div class="score-pip"><span class="score-pip-icon">C</span></div>
+        <div class="score-node-name">Attention</div>
+        <div class="score-node-sub">Volume of articles</div>
+      </div>
+
+      <!-- Outer orbit -->
+      <div class="score-node" style="top: 6%; left: 22%;">
+        <div class="score-pip"><span class="score-pip-icon">NLP</span></div>
+        <div class="score-node-name">Sentiment</div>
+        <div class="score-node-sub">Emotional temp by lean</div>
+      </div>
+      <div class="score-node" style="top: 6%; left: 78%;">
+        <div class="score-pip"><span class="score-pip-icon">C</span></div>
+        <div class="score-node-name">Timeline</div>
+        <div class="score-node-sub">Story lifecycle stage</div>
+      </div>
+      <div class="score-node" style="top: 42%; left: 4%;">
+        <div class="score-pip"><span class="score-pip-icon">C</span></div>
+        <div class="score-node-name">Gaps</div>
+        <div class="score-node-sub">Who is not covering this</div>
+      </div>
+      <div class="score-node" style="top: 42%; left: 96%;">
+        <div class="score-pip"><span class="score-pip-icon">F</span></div>
+        <div class="score-node-name">Heat</div>
+        <div class="score-node-sub">Front-page prominence</div>
+      </div>
+      <div class="score-node" style="top: 88%; left: 6%;">
+        <div class="score-pip"><span class="score-pip-icon">A</span></div>
+        <div class="score-node-name">Insights</div>
+        <div class="score-node-sub">Category-level patterns</div>
+      </div>
+      <div class="score-node" style="top: 88%; left: 94%;">
+        <div class="score-pip"><span class="score-pip-icon">S</span></div>
+        <div class="score-node-name">Ranking</div>
+        <div class="score-node-sub">Final sort order</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-item">
+        <div class="callout-label">Sentiment by Lean</div>
+        <div class="callout-text">Sentiment analysis runs per article, then results are grouped by outlet political lean. This surfaces editorial divergence quantitatively: when left-leaning outlets cover a story with alarm while right-leaning outlets dismiss it, that pattern is captured as measured framing data, not opinion.</div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-label">Deterministic Ranking</div>
+        <div class="callout-text">The final homepage ranking uses a weighted formula with no AI in the loop. Impact, source breadth, publishing velocity, and editorial divergence are combined with time-decay factors. Rankings are reproducible, auditable, and fast.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE 04: ANALYZE -->
+<section class="section alt">
+  <div class="section-inner">
+    <span class="section-label">Pipeline 04</span>
+    <div class="section-header"><div class="section-number">04</div><h2 class="section-title">Analyze</h2></div>
+    <p class="section-desc">
+      The final and most sophisticated stage. An AI editorial triage selects which stories warrant deep analysis. Full article bodies are scraped. Per-article editorial framing is classified across seven categories. Then a dedicated analysis model generates a complete structured breakdown: neutral, editorial-quality prose with source-specific framing contrasts, coverage comparisons, and verified claims.
+    </p>
+
+    <div class="conveyor" style="margin-bottom: 56px;">
+      <div class="conveyor-node">
+        <div class="node-circle"><div class="node-fill">1</div></div>
+        <div class="node-label">Select</div>
+        <div class="node-detail">Editorial triage</div>
+      </div>
+      <div class="conveyor-node">
+        <div class="node-circle"><div class="node-fill">2</div></div>
+        <div class="node-label">Scrape</div>
+        <div class="node-detail">Full article body</div>
+      </div>
+      <div class="conveyor-node key">
+        <div class="node-circle"><div class="node-fill">3</div></div>
+        <div class="node-label">Frame</div>
+        <div class="node-detail">7 framing categories</div>
+      </div>
+      <div class="conveyor-node key">
+        <div class="node-circle"><div class="node-fill">4</div></div>
+        <div class="node-label">Analyze</div>
+        <div class="node-detail">Structured generation</div>
+      </div>
+    </div>
+
+    <!-- Document preview card -->
+    <div class="doc-preview-wrapper">
+      <div class="doc-preview">
+        <div class="doc-main">
+          <span class="doc-badge">Analysis Output</span>
+
+          <div class="doc-line">
+            <div class="doc-line-label">headline</div>
+            <div class="doc-line-bar"><div class="doc-line-bar-fill" style="width:75%"></div></div>
+          </div>
+          <div class="doc-line">
+            <div class="doc-line-label">lead</div>
+            <div class="doc-line-bar" style="height:8px; margin-bottom:4px;"><div class="doc-line-bar-fill" style="width:100%"></div></div>
+            <div class="doc-line-bar" style="height:8px; margin-bottom:4px;"><div class="doc-line-bar-fill" style="width:88%"></div></div>
+            <div class="doc-line-bar" style="height:8px;"><div class="doc-line-bar-fill" style="width:62%"></div></div>
+          </div>
+          <div class="doc-line">
+            <div class="doc-line-label">body</div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:100%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:96%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:100%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:92%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:100%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:87%"></div></div>
+            <div class="doc-line-bar" style="height:6px; margin-bottom:3px;"><div class="doc-line-bar-fill" style="width:100%"></div></div>
+            <div class="doc-line-bar" style="height:6px;"><div class="doc-line-bar-fill" style="width:44%"></div></div>
+          </div>
+          <div class="doc-line" style="margin-top:20px;">
+            <div class="doc-line-label">framing_cards</div>
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1; height:40px; border-radius:4px; background:rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);"></div>
+              <div style="flex:1; height:40px; border-radius:4px; background:rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);"></div>
+              <div style="flex:1; height:40px; border-radius:4px; background:rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);"></div>
+            </div>
+          </div>
+          <div class="doc-line">
+            <div class="doc-line-label">bottom_line</div>
+            <div class="doc-line-bar" style="height:8px;"><div class="doc-line-bar-fill" style="width:70%"></div></div>
+          </div>
+        </div>
+
+        <div class="doc-sidebar">
+          <div class="doc-field">
+            <div class="doc-field-name">headline</div>
+            <div class="doc-field-desc">Neutral, AP-style headline</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-name">lead</div>
+            <div class="doc-field-desc">Opening paragraph with key facts</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-name">body</div>
+            <div class="doc-field-desc">Flowing analysis with woven framing contrasts</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-name">framing_cards</div>
+            <div class="doc-field-desc">Source-by-source comparisons</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-name">bottom_line</div>
+            <div class="doc-field-desc">Single key takeaway</div>
+          </div>
+          <div class="doc-field">
+            <div class="doc-field-name">source_coverage</div>
+            <div class="doc-field-desc">Per-outlet framing, inclusions, omissions</div>
+          </div>
+        </div>
+
+        <div class="doc-footer">
+          <span><strong>Reads</strong> 8 to 30 full articles per story</span>
+          <span><strong>Generates</strong> 2,000 to 4,000 words of structured analysis</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout single-col">
+      <div class="callout-item">
+        <div class="callout-label">Seven Editorial Frames</div>
+        <div class="callout-text">
+          Every article is classified before the final analysis begins. This gives the analysis model structured framing data to work with, concrete categorization rather than asking it to detect bias from raw text.
+          <div class="framing-pills">
+            <span class="framing-pill">Accountability</span>
+            <span class="framing-pill">Alarmist</span>
+            <span class="framing-pill">Contextual</span>
+            <span class="framing-pill">Dismissive</span>
+            <span class="framing-pill">Empathetic</span>
+            <span class="framing-pill">Investigative</span>
+            <span class="framing-pill">Neutral / Wire</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MULTI-MODEL ARCHITECTURE -->
+<section class="section-dark">
+  <div class="section-inner">
+    <h2>Six models, each chosen for the job</h2>
+    <p class="lead">
+      ClearSignal does not route everything through one model and hope for the best. Fast models handle volume. Reasoning models handle editorial decisions. The most capable model is reserved for the final analysis, where nuance and quality matter most.
+    </p>
+
+    <div class="model-tiers">
+      <div class="model-tier tier-fast">
+        <div class="tier-label">Speed Tier</div>
+        <ul class="tier-model-list">
+          <li class="tier-model-item">
+            <div class="tier-model-name">text-embedding-3-small</div>
+            <div class="tier-model-task">Embeddings</div>
+            <div class="tier-model-why">384-dim vectors at scale</div>
+          </li>
+          <li class="tier-model-item">
+            <div class="tier-model-name">VADER</div>
+            <div class="tier-model-task">Sentiment analysis</div>
+            <div class="tier-model-why">Per-article tone, grouped by lean</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="model-tier tier-reason">
+        <div class="tier-label">Reasoning Tier</div>
+        <ul class="tier-model-list">
+          <li class="tier-model-item">
+            <div class="tier-model-name">Claude Haiku</div>
+            <div class="tier-model-task">Labeling, scoring, framing</div>
+            <div class="tier-model-why">Hundreds of calls per cycle</div>
+          </li>
+          <li class="tier-model-item">
+            <div class="tier-model-name">GPT-4o-mini</div>
+            <div class="tier-model-task">Validation and selection</div>
+            <div class="tier-model-why">Structured editorial reasoning</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="model-tier tier-gen">
+        <div class="tier-label">Generation Tier</div>
+        <ul class="tier-model-list">
+          <li class="tier-model-item">
+            <div class="tier-model-name">Claude Sonnet</div>
+            <div class="tier-model-task">Full analysis generation</div>
+            <div class="tier-model-why">Long-form editorial quality</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section class="section">
+  <div class="section-inner">
+    <span class="section-label">Core Principles</span>
+    <div style="margin-bottom: 48px;"></div>
+    <div class="principles-grid">
+      <div class="principle">
+        <div class="principle-number">01</div>
+        <div class="principle-title">Source-Blind Framing</div>
+        <div class="principle-desc">Analyses never say "the liberal take" or "the conservative view." Framing contrasts are attributed to specific outlets. CNN emphasized X while Fox focused on Y. Readers see what each source actually reported. No shorthand. No labels.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-number">02</div>
+        <div class="principle-title">Coverage Gap Detection</div>
+        <div class="principle-desc">Every story is checked for who is not covering it. If fifteen right-leaning outlets cover a congressional hearing but only two left-leaning outlets mention it, that silence is surfaced as data. What is missing is often as revealing as what is there.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-number">03</div>
+        <div class="principle-title">Separation of Concerns</div>
+        <div class="principle-desc">No single model makes all the decisions. No single formula drives all the scores. Fast models handle volume. Powerful models handle nuance. Deterministic formulas handle ranking. This prevents any single point of failure or bias amplification.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer-cta">
+  <a href="/news">See today's analysis &rarr;</a>
+</div>
+<footer>ClearSignal &middot; Multi-perspective news analysis</footer>
+
+</body>
+</html>

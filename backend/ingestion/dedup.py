@@ -214,12 +214,12 @@ if __name__ == "__main__":
 
     # Show title similarity between #1 and #3 for demo
     sim = title_similarity(fixtures[0].title, fixtures[2].title)
-    print(f"\nTitle similarity demo:")
+    print("\nTitle similarity demo:")
     print(f"  A: {fixtures[0].title!r}")
     print(f"  B: {fixtures[2].title!r}")
     print(f"  Jaccard = {sim:.3f}  (threshold = {_JACCARD_THRESHOLD})")
 
-    print(f"\nSurviving articles:")
+    print("\nSurviving articles:")
     for art in results:
         print(f"  [{art.url}]")
         print(f"    {art.title}")

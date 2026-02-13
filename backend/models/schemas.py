@@ -5,11 +5,12 @@ All pipeline stages communicate through these Pydantic models.
 Serialisation is handled by Pydantic v2's .model_dump() / .model_validate().
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ── Raw Article ───────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ class Article(BaseModel):
     source_domain: str = ""
     source_bias: str = ""
     source_bias_score: float = 0.0
+    source_region: str = "us"  # "us" or "international"
     embedding: list[float] = Field(default_factory=list)
     sentiment: float = 0.0  # -1.0 negative … +1.0 positive
 
@@ -71,11 +73,26 @@ class Story(BaseModel):
     source_count: int = 0
     avg_bias_score: float = 0.0
     bias_spread: float = 0.0        # max - min bias score in cluster
-    centroid: list[float] = Field(default_factory=list)
-    active: bool = True
+    population_affected: str = ""
+    sentiment_left: float | None = None
+    sentiment_center: float | None = None
+    sentiment_right: float | None = None
     first_seen: datetime | None = None
     last_updated: datetime | None = None
+    peak_date: str | None = None
+    status: str = "developing"
+    centroid: list[float] = Field(default_factory=list)
+    trend: list[dict] = Field(default_factory=list)
+    active: bool = True
     created_at: datetime | None = None
+    significance_score: int | None = None
+    significance_factors: dict[str, Any] | None = None
+    confidence: str = ""
+    caveats: list[str] = Field(default_factory=list)
+    last_article_at: datetime | None = None
+    coverage_velocity: float | None = None
+    impact_scored_at: datetime | None = None
+    scored_at_article_count: int = 0
 
 
 # ── AI Analysis ──────────────────────────────────────────────────────────────
@@ -89,11 +106,18 @@ class Analysis(BaseModel):
     headline: str = ""
     dateline: str = ""
     lede: str = ""
+    body: list[dict] = Field(default_factory=list)
     context: str = ""
-    contrasts: str = ""              # how left vs right coverage differs
-    facts: str = ""                  # key verifiable claims
+    source_framings: list[dict] = Field(default_factory=list)
+    contrasts: list[dict] = Field(default_factory=list)
+    facts: list[dict] = Field(default_factory=list)
     bottom_line: str = ""
-    coverage_note: str = ""          # meta-note on attention gaps
+    coverage_note: str = ""
+    spectrum: str = ""
+    framing_check: str = ""
+    generated_at: datetime | None = None
+    article_count_at_gen: int = 0
+    analysis_version: int = 1
 
 
 # ── Ingestion Result ─────────────────────────────────────────────────────────

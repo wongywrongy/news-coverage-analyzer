@@ -6,6 +6,8 @@ Usage:
     print(settings.supabase_url)
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Literal
 
@@ -34,6 +36,22 @@ class Settings(BaseSettings):
 
     # ── Embedding mode ────────────────────────────────────
     embedding_mode: Literal["openai", "local"] = "openai"
+
+    # ── Models ──────────────────────────────────────────
+    openai_model: str = "gpt-4o-mini"
+    claude_model: str = "claude-sonnet-4-20250514"
+    haiku_model: str = "claude-haiku-4-5-20251001"
+    embedding_model: str = "text-embedding-3-small"
+
+    # ── Analysis ─────────────────────────────────────────
+    analysis_batch_size: int = 10
+    min_significance_score: int = 45
+    max_analysis_tokens: int = 8000
+    current_analysis_version: int = 2
+
+    # ── Editorial selection ────────────────────────────
+    max_stories_per_analysis_cycle: int = 8
+    selection_enabled: bool = True
 
     # ── Logging ───────────────────────────────────────────
     log_level: str = "INFO"

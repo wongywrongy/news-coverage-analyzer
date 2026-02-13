@@ -10,6 +10,8 @@ Usage:
     client.table("articles").select("*").execute()
 """
 
+from __future__ import annotations
+
 import logging
 
 from supabase import Client, create_client
