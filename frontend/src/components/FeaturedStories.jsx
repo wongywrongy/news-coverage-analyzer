@@ -46,9 +46,9 @@ export default function FeaturedStories({ stories }) {
   const featured = stories.slice(0, 3);
 
   return (
-    <section style={{
+    <section className="hp-recent" style={{
       padding: 'var(--space-xl) 48px',
-      background: 'var(--bg)',
+      background: '#FAFAF7',
     }}>
       <div style={{ maxWidth: 1080, margin: '0 auto' }}>
         {/* Header row */}
@@ -58,32 +58,34 @@ export default function FeaturedStories({ stories }) {
           alignItems: 'baseline',
           marginBottom: 'var(--space-md)',
           paddingBottom: 'var(--space-sm)',
-          borderBottom: '2px solid var(--ink)',
+          borderBottom: '2px solid #1A1A1A',
         }}>
           <span style={{
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 11,
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '1.5px',
-            color: 'var(--ink)',
+            color: '#1A1A1A',
           }}>
             Recent Analysis
           </span>
           <Link href="/news" style={{
-            fontSize: 13,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 12,
             fontWeight: 500,
-            color: 'var(--accent-blue)',
+            color: '#C8963E',
             textDecoration: 'none',
           }}>
-            See today's full briefing &rarr;
+            See today&rsquo;s full briefing &rarr;
           </Link>
         </div>
 
         {/* Card grid */}
-        <div style={{
+        <div className="recent-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 'var(--space-md)',
+          gap: 16,
         }}>
           {featured.map(story => (
             <FeaturedCard key={story.id} story={story} />
@@ -104,14 +106,14 @@ function FeaturedCard({ story }) {
     <Link href={`/topic/${story.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div
         style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          padding: 'var(--space-md)',
+          background: '#fff',
+          border: `1px solid ${hovered ? '#C8C6C0' : '#E8E6E1'}`,
+          borderRadius: 10,
+          padding: 24,
           cursor: 'pointer',
-          transition: 'box-shadow 0.2s, transform 0.2s',
-          boxShadow: hovered ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-          transform: hovered ? 'translateY(-2px)' : 'none',
+          transition: 'box-shadow 0.2s, transform 0.2s, border-color 0.2s',
+          boxShadow: hovered ? 'var(--shadow-md)' : 'none',
+          transform: hovered ? 'translateY(-1px)' : 'none',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -122,6 +124,7 @@ function FeaturedCard({ story }) {
         {/* Category + tag */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 10,
             fontWeight: 700,
             textTransform: 'uppercase',
@@ -137,10 +140,10 @@ function FeaturedCard({ story }) {
         <h3 style={{
           fontFamily: "'Playfair Display', serif",
           fontWeight: 700,
-          fontSize: 20,
+          fontSize: 19,
           lineHeight: 1.25,
           letterSpacing: '-0.3px',
-          color: 'var(--ink)',
+          color: '#1A1A1A',
           marginBottom: 8,
         }}>
           {story.headline || story.topic}
@@ -151,7 +154,7 @@ function FeaturedCard({ story }) {
           <p style={{
             fontSize: 14,
             lineHeight: 1.5,
-            color: 'var(--ink-secondary)',
+            color: '#5A5A5A',
             marginBottom: 'var(--space-sm)',
             display: '-webkit-box',
             WebkitLineClamp: 3,
@@ -167,7 +170,7 @@ function FeaturedCard({ story }) {
         <div style={{
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
-          color: 'var(--ink-muted)',
+          color: '#767676',
           marginTop: 'auto',
         }}>
           {story.article_count} articles &middot; {story.source_count || '\u2014'} sources

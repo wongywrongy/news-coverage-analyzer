@@ -145,6 +145,32 @@ button {
   }
 }
 
+/* ── Homepage sections responsive ── */
+
+@media (max-width: 960px) {
+  .hero-section { padding: 64px 24px 56px !important; }
+  .hero-title { font-size: 36px !important; }
+  .hero-ctas { flex-direction: column !important; align-items: center !important; }
+  .hero-stats { gap: 24px !important; flex-wrap: wrap !important; }
+  .coverage-top { flex-direction: column !important; }
+  .hp-coverage { padding: 56px 24px !important; }
+  .coverage-row { grid-template-columns: 140px 1fr 60px !important; }
+  .coverage-ctas { flex-wrap: wrap !important; }
+  .meth-teaser-top { flex-direction: column !important; }
+  .hp-meth { padding: 56px 24px !important; }
+  .pipeline-track { flex-wrap: wrap !important; gap: 20px !important; justify-content: center !important; }
+  .pipeline-rail { display: none !important; }
+  .pipeline-node { flex: 0 0 calc(20% - 16px) !important; }
+  .principle-cards { grid-template-columns: 1fr !important; }
+  .hp-recent { padding: var(--space-xl) 24px !important; }
+  .recent-grid { grid-template-columns: 1fr !important; }
+}
+
+.pipeline-node:hover .pipeline-circle {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.3) !important;
+}
+
 /* ── Hero responsive ── */
 
 @media (max-width: 768px) {

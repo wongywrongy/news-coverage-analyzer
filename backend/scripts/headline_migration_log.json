@@ -898,5 +898,311 @@
     "reason_flagged": "too short (27 chars)",
     "similarity": 0.218,
     "timestamp": "2026-02-10T22:07:51.126307+00:00"
+  },
+  {
+    "story_id": 772,
+    "old_headline": "Exclusive: Trump's spy chief Gabbard winds down intelligence task force",
+    "new_headline": "Tulsi Gabbard winds down intelligence task force as director",
+    "rationale": "The original used casual framing ('Trump's spy chief') and vague language ('winds down'); this version uses her official title and describes the specific action being reported across the articles.",
+    "reason_flagged": "vague opener ('exclusive:')",
+    "similarity": 0.702,
+    "timestamp": "2026-02-11T07:53:36.850878+00:00"
+  },
+  {
+    "story_id": 776,
+    "old_headline": "Trump Economic Policy Initiatives",
+    "new_headline": "Trump Administration Economic Policies Show Mixed Results on Investment Goals",
+    "rationale": "The original title was generic; the cluster reveals specific economic initiatives (shipping investment, Federal Reserve appointments, growth projections) with varied outcomes, so the rewrite identifies the concrete subject matter and acknowledges the mixed reception across articles.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.473,
+    "timestamp": "2026-02-11T07:53:39.986411+00:00"
+  },
+  {
+    "story_id": 760,
+    "old_headline": "February Update 1.15.0",
+    "new_headline": "Arc Raiders Update 1.15.0 Adds Shared Watch PvE Event and Fixes Duplication Bug",
+    "rationale": "The original 'February Update 1.15.0' is generic and uninformative; this version specifies the game, update number, and the three concrete changes (new event, PvE focus, bug fix) that the articles consistently highlight.",
+    "reason_flagged": "too short (22 chars)",
+    "similarity": 0.317,
+    "timestamp": "2026-02-11T07:53:42.874488+00:00"
+  },
+  {
+    "story_id": 794,
+    "old_headline": "Don Lemon Hires Ex",
+    "new_headline": "Don Lemon hires former federal prosecutor Joseph Thompson for defense",
+    "rationale": "The original title 'Don Lemon Hires Ex' is vague about both the professional role and identity of the person hired; the rewrite specifies it's a federal prosecutor named Joseph Thompson, making the headline concrete and informative.",
+    "reason_flagged": "too short (18 chars)",
+    "similarity": 0.391,
+    "timestamp": "2026-02-11T07:53:46.891821+00:00"
+  },
+  {
+    "story_id": 772,
+    "old_headline": "Exclusive: Trump's spy chief Gabbard winds down intelligence task force",
+    "new_headline": "Director of National Intelligence Gabbard winds down intelligence task force",
+    "rationale": "The original used informal 'spy chief' and 'exclusive' framing; this version uses her official title and focuses on the specific action being reported across all three articles.",
+    "reason_flagged": "vague opener ('exclusive:')",
+    "similarity": 0.68,
+    "timestamp": "2026-02-11T07:53:57.521777+00:00"
+  },
+  {
+    "story_id": 776,
+    "old_headline": "Trump Economic Policy Initiatives",
+    "new_headline": "Trump Administration Pursues Economic Growth Targets and Federal Reserve Leadership Changes",
+    "rationale": "The original title was generic and non-specific; this headline identifies the concrete policy areas actually discussed across articles: growth projections, Fed chair selection, and shipping/infrastructure investments.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.339,
+    "timestamp": "2026-02-11T07:54:00.434331+00:00"
+  },
+  {
+    "story_id": 760,
+    "old_headline": "February Update 1.15.0",
+    "new_headline": "Arc Raiders Update 1.15.0 Adds Shared Watch Event and Fixes Duplication Bug",
+    "rationale": "The original 'February Update 1.15.0' is vague and generic; the rewrite specifies the actual content (Shared Watch Event, duplication bug fix) making it informative and neutral while avoiding loaded language like 'finally goes full PvE.'",
+    "reason_flagged": "too short (22 chars)",
+    "similarity": 0.33,
+    "timestamp": "2026-02-11T07:54:04.116741+00:00"
+  },
+  {
+    "story_id": 794,
+    "old_headline": "Don Lemon Hires Ex",
+    "new_headline": "Don Lemon hires former federal prosecutor Joseph Thompson for defense",
+    "rationale": "The original title 'Don Lemon Hires Ex' is vague about both who was hired and their role; the rewrite specifies the person's name, profession, and purpose while remaining neutral.",
+    "reason_flagged": "too short (18 chars)",
+    "similarity": 0.391,
+    "timestamp": "2026-02-11T07:54:06.955927+00:00"
+  },
+  {
+    "story_id": 844,
+    "old_headline": "Man convicted of first",
+    "new_headline": "Ronald Palmer Heath executed in Florida for 1989 killing",
+    "rationale": "The original title 'Man convicted of first' is incomplete and vague; the rewrite specifies the person's name, state, the crime year, and completes the thought while remaining neutral and factual.",
+    "reason_flagged": "too short (22 chars)",
+    "similarity": 0.282,
+    "timestamp": "2026-02-13T07:27:40.795666+00:00"
+  },
+  {
+    "story_id": 1000,
+    "old_headline": "Reanimal wants to devour you",
+    "new_headline": "Reanimal video game review",
+    "rationale": "The original title 'Reanimal wants to devour you' is vague marketing language that doesn't specify the subject is a video game; the rewrite identifies it as a game review using factual, neutral language.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.481,
+    "timestamp": "2026-02-13T07:27:43.205671+00:00"
+  },
+  {
+    "story_id": 908,
+    "old_headline": "2 skiers dead as avalanche rocks Italian alps site near 2026 Winter Olympics",
+    "new_headline": "Two skiers killed in avalanche near Italian Alps Olympic venue",
+    "rationale": "The original title is specific but uses imprecise language ('rocks'); this version uses factual, neutral phrasing ('killed in') and clarifies the location while removing any emotional framing.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.638,
+    "timestamp": "2026-02-13T07:27:45.851038+00:00"
+  },
+  {
+    "story_id": 60,
+    "old_headline": "US-Russia Nuclear Treaty Expiration",
+    "new_headline": "New START nuclear treaty between US and Russia expires",
+    "rationale": "The original title was vague about which treaty and what 'expiration' means; this specifies the treaty name and the concrete event occurring.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-13T07:27:48.057668+00:00"
+  },
+  {
+    "story_id": 1001,
+    "old_headline": "Winter Olympics Competition Results",
+    "new_headline": "2026 Winter Olympics: Multiple Events and Coverage Updates",
+    "rationale": "The original title was too generic to convey the specific competitions and incidents covered; this version identifies the actual subject matter (2026 Winter Olympics with multiple event results and a coverage issue) while remaining neutral.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.473,
+    "timestamp": "2026-02-13T07:27:50.503104+00:00"
+  },
+  {
+    "story_id": 517,
+    "old_headline": "Deaths During NYC Cold Snap",
+    "new_headline": "18 Deaths Reported During Extended Subzero Cold Period in NYC",
+    "rationale": "The original title was vague about the specific death toll and nature of the cold event; this headline specifies the number of deaths, the temperature conditions, and the geographic location while maintaining neutrality.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.5,
+    "timestamp": "2026-02-13T07:27:52.652342+00:00"
+  },
+  {
+    "story_id": 822,
+    "old_headline": "The decline of single",
+    "new_headline": "Declining rates of single-person households across United States",
+    "rationale": "The original title 'The decline of single' is vague about what is declining; this specifies it refers to single-person households based on the Economist article's focus on demographic trends regarding unmarried/single living arrangements.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.4,
+    "timestamp": "2026-02-13T07:27:55.099282+00:00"
+  },
+  {
+    "story_id": 889,
+    "old_headline": "Actor Bud Cort Dies at 77",
+    "new_headline": "Bud Cort, star of 'Harold and Maude,' dies at 77",
+    "rationale": "The original title is vague about who Bud Cort was; this version specifies his most notable role while maintaining neutrality and staying within the 12-word limit.",
+    "reason_flagged": "too short (25 chars)",
+    "similarity": 0.521,
+    "timestamp": "2026-02-13T07:27:57.128464+00:00"
+  },
+  {
+    "story_id": 976,
+    "old_headline": "NASA, SpaceX Crew",
+    "new_headline": "SpaceX, NASA scheduled to launch Crew-12 mission to International Space Station",
+    "rationale": "The original title 'NASA, SpaceX Crew' is vague and incomplete; the rewrite specifies the mission name (Crew-12), the action (launch), and the destination (ISS), providing readers with concrete information about the event.",
+    "reason_flagged": "too short (17 chars)",
+    "similarity": 0.229,
+    "timestamp": "2026-02-13T07:27:59.380000+00:00"
+  },
+  {
+    "story_id": 842,
+    "old_headline": "India hammer Namibia in run",
+    "new_headline": "India defeats Namibia by 93 runs in T20 World Cup match",
+    "rationale": "The original 'hammer' is vague slang; the rewrite specifies the opponent, margin of victory, and event context while using neutral language.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.488,
+    "timestamp": "2026-02-13T07:28:01.547846+00:00"
+  },
+  {
+    "story_id": 940,
+    "old_headline": "Lucas: Miami Rapid Reactions",
+    "new_headline": "North Carolina basketball falls to Miami; Wilson out with hand fracture",
+    "rationale": "The original title 'Lucas: Miami Rapid Reactions' is vague columnist attribution; the specific shared subject across articles is North Carolina's loss to Miami and Wilson's injury, which this headline makes explicit.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.343,
+    "timestamp": "2026-02-13T07:28:03.906727+00:00"
+  },
+  {
+    "story_id": 801,
+    "old_headline": "House Votes on Trump Tariffs",
+    "new_headline": "House votes on resolution to overturn Trump's Canada tariffs",
+    "rationale": "The original title was vague about what specific tariffs were being voted on and what action the House was taking; this specifies the subject (Canada tariffs) and the action (voting on a resolution to overturn them).",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.636,
+    "timestamp": "2026-02-13T07:28:06.262591+00:00"
+  },
+  {
+    "story_id": 642,
+    "old_headline": "Cuba Faces Oil Import Crisis",
+    "new_headline": "Mexico sends humanitarian aid to Cuba amid reduced oil imports",
+    "rationale": "The original 'Oil Import Crisis' is vague about causes and scope; the rewrite specifies the concrete event (Mexican aid shipments) and factual condition (reduced imports) while remaining neutral about causation.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.444,
+    "timestamp": "2026-02-13T07:28:08.620149+00:00"
+  },
+  {
+    "story_id": 844,
+    "old_headline": "Man convicted of first",
+    "new_headline": "Ronald Palmer Heath executed in Florida for 1989 traveling salesman murder",
+    "rationale": "The original title 'Man convicted of first' is incomplete and vague; the rewrite specifies the person's name, the state, the crime, the victim type, and the year, making it a complete and specific headline.",
+    "reason_flagged": "too short (22 chars)",
+    "similarity": 0.125,
+    "timestamp": "2026-02-13T07:28:18.555778+00:00"
+  },
+  {
+    "story_id": 1000,
+    "old_headline": "Reanimal wants to devour you",
+    "new_headline": "Reanimal video game review",
+    "rationale": "The original title uses sensationalized language ('devour you') that obscures the subject. The rewritten headline specifies that this is about a video game and its critical reception, which is clear from the article cluster.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.481,
+    "timestamp": "2026-02-13T07:28:21.146970+00:00"
+  },
+  {
+    "story_id": 908,
+    "old_headline": "2 skiers dead as avalanche rocks Italian alps site near 2026 Winter Olympics",
+    "new_headline": "Two skiers killed in avalanche in Italian Alps near 2026 Winter Olympics venue",
+    "rationale": "The original title is specific but awkwardly phrased ('rocks'); this version clarifies the factual event (deaths from avalanche) and location (Italian Alps near Olympic venue) in neutral, direct language.",
+    "reason_flagged": "appears truncated (no ending punctuation, lowercase start)",
+    "similarity": 0.792,
+    "timestamp": "2026-02-13T07:28:23.818855+00:00"
+  },
+  {
+    "story_id": 60,
+    "old_headline": "US-Russia Nuclear Treaty Expiration",
+    "new_headline": "New START nuclear treaty between US and Russia expires",
+    "rationale": "The original title was vague about which treaty and what 'expiration' meant; this specifies the treaty name, countries involved, and the concrete event occurring.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.517,
+    "timestamp": "2026-02-13T07:28:26.539406+00:00"
+  },
+  {
+    "story_id": 1001,
+    "old_headline": "Winter Olympics Competition Results",
+    "new_headline": "2026 Winter Olympics: Multiple events conclude with various results",
+    "rationale": "The original title was too generic to be useful; this version specifies the event (2026 Winter Olympics), acknowledges the multiple sports covered across articles (luge, snowboardcross, ice dancing, figure skating), and uses neutral language focused on competition outcomes rather than commentary or controversy.",
+    "reason_flagged": "likely truncated (4 words, no ending)",
+    "similarity": 0.608,
+    "timestamp": "2026-02-13T07:28:29.788721+00:00"
+  },
+  {
+    "story_id": 517,
+    "old_headline": "Deaths During NYC Cold Snap",
+    "new_headline": "18 deaths reported during extended subzero cold period in NYC",
+    "rationale": "The original title was vague about what happened and to whom; this specifies the death toll, the weather event, and the location while removing emotional framing.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.5,
+    "timestamp": "2026-02-13T07:28:32.629496+00:00"
+  },
+  {
+    "story_id": 822,
+    "old_headline": "The decline of single",
+    "new_headline": "Declining share of single households in United States housing markets",
+    "rationale": "The original title 'The decline of single' is vague and incomplete; the rewrite specifies that this concerns single households and their declining demographic share, which is the core subject connecting the articles about housing, marital status, and demographic trends.",
+    "reason_flagged": "too short (21 chars)",
+    "similarity": 0.378,
+    "timestamp": "2026-02-13T07:28:34.962321+00:00"
+  },
+  {
+    "story_id": 889,
+    "old_headline": "Actor Bud Cort Dies at 77",
+    "new_headline": "Bud Cort, 'Harold and Maude' Actor, Dies at 77",
+    "rationale": "The original title was already specific about the death and age, but this version adds the actor's most notable film role to provide concrete context about who he was, making it more informative while remaining neutral.",
+    "reason_flagged": "too short (25 chars)",
+    "similarity": 0.535,
+    "timestamp": "2026-02-13T07:28:37.814130+00:00"
+  },
+  {
+    "story_id": 976,
+    "old_headline": "NASA, SpaceX Crew",
+    "new_headline": "SpaceX to Launch NASA Crew-12 Mission to International Space Station Friday",
+    "rationale": "The original title was vague and incomplete; this version specifies the mission name (Crew-12), the launch provider (SpaceX), the destination (ISS), and timing (Friday), making the headline concrete and informative.",
+    "reason_flagged": "too short (17 chars)",
+    "similarity": 0.239,
+    "timestamp": "2026-02-13T07:28:40.436956+00:00"
+  },
+  {
+    "story_id": 842,
+    "old_headline": "India hammer Namibia in run",
+    "new_headline": "India defeats Namibia by 93 runs in T20 World Cup match",
+    "rationale": "Original title 'hammer' is vague sports jargon; rewrite specifies the sport, opponent, margin of victory, and context (T20 World Cup) while removing emotional language.",
+    "reason_flagged": "too short (27 chars)",
+    "similarity": 0.488,
+    "timestamp": "2026-02-13T07:28:43.018079+00:00"
+  },
+  {
+    "story_id": 940,
+    "old_headline": "Lucas: Miami Rapid Reactions",
+    "new_headline": "No. 11 North Carolina loses to unranked Miami in college basketball",
+    "rationale": "The original title 'Lucas: Miami Rapid Reactions' is vague and appears to reference a columnist's piece rather than the actual news event; the rewrite identifies the specific, factual event shared across all articles—UNC's loss to Miami—with concrete details.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.274,
+    "timestamp": "2026-02-13T07:28:46.122428+00:00"
+  },
+  {
+    "story_id": 801,
+    "old_headline": "House Votes on Trump Tariffs",
+    "new_headline": "House votes on resolutions to overturn Trump's Canada tariffs",
+    "rationale": "The original title was vague about what the vote concerned; this specifies it involved resolutions to overturn Canada tariffs, capturing the central factual event across all articles.",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.629,
+    "timestamp": "2026-02-13T07:28:48.339920+00:00"
+  },
+  {
+    "story_id": 642,
+    "old_headline": "Cuba Faces Oil Import Crisis",
+    "new_headline": "Mexico sends humanitarian aid to Cuba as oil imports halt",
+    "rationale": "The original title 'Cuba Faces Oil Import Crisis' is vague about what is actually happening; the rewrite specifies the concrete event (Mexican aid shipment) and factual condition (oil imports stopping) without emotional language like 'crisis.'",
+    "reason_flagged": "too short (28 chars)",
+    "similarity": 0.447,
+    "timestamp": "2026-02-13T07:28:50.772481+00:00"
   }
 ]
